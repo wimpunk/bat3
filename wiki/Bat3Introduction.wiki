@@ -1,5 +1,5 @@
 #labels Featured
-#Little introduction about bat3
+# Little introduction about bat3
 
 = Introduction =
 
@@ -11,4 +11,3 @@ This bat3 project started after having issues with the original software for the
 Ideas:
 * using *syslog*
 * help on use
-
