@@ -1,0 +1,21 @@
+Begin3
+Title:		bat3
+Version:	@VERSION@
+Entered-date:	@ISODATE@
+Description:	ts-bat3 controller
+		@configure_input@
+		Please edit bat3.lsm.in to fix the Keywords and
+		Primary-site entries, add several more lines of
+		description here if appropriate, and to delete these
+		instructions.
+Keywords:	[substitute your keywords here]
+Author: 	wimpunk@gmail.com (wimpunk)
+Maintained-by:	wimpunk@gmail.com (wimpunk)
+Primary-site:	metlab.unc.edu pub/Linux/apps/some/directory
+		31k bat3-@VERSION@.tar.gz
+		500  bat3.lsm
+Alternate-site: 
+Original-site:  
+Platforms:      
+Copying-policy:	GNU copyleft
+End
