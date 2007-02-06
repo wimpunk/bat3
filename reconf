@@ -5,3 +5,4 @@ autoconf
 # acconfig
 autoheader
 automake -a
+./configure --host=arm-unknown-linux-gnu
