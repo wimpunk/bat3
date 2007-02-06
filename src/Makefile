@@ -31,7 +31,7 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = i686-pc-linux-gnu
-host_triplet = i686-pc-linux-gnu
+host_triplet = arm-unknown-linux-gnu
 bin_PROGRAMS = bat3$(EXEEXT)
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
@@ -43,12 +43,14 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
-am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man1dir)"
+am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_bat3_OBJECTS = bat3.$(OBJEXT) xmalloc.$(OBJEXT) bat3-opt.$(OBJEXT)
+am_bat3_OBJECTS = bat3.$(OBJEXT) avr.$(OBJEXT) file.$(OBJEXT) \
+	IntArray.$(OBJEXT) ByteArray.$(OBJEXT) serial.$(OBJEXT) \
+	term.$(OBJEXT) net.$(OBJEXT) Process.$(OBJEXT) log.$(OBJEXT)
 bat3_OBJECTS = $(am_bat3_OBJECTS)
-bat3_DEPENDENCIES =
+bat3_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I. -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -58,9 +60,6 @@ CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 SOURCES = $(bat3_SOURCES)
 DIST_SOURCES = $(bat3_SOURCES)
-man1dir = $(mandir)/man1
-NROFF = nroff
-MANS = $(man_MANS)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -71,10 +70,10 @@ AUTOCONF = ${SHELL} /home/wim/projects/bat3google/missing --run autoconf
 AUTOHEADER = ${SHELL} /home/wim/projects/bat3google/missing --run autoheader
 AUTOMAKE = ${SHELL} /home/wim/projects/bat3google/missing --run automake-1.10
 AWK = mawk
-CC = gcc
+CC = arm-unknown-linux-gnu-gcc
 CCDEPMODE = depmode=gcc3
 CFLAGS = -g -O2
-CPP = gcc -E
+CPP = arm-unknown-linux-gnu-gcc -E
 CPPFLAGS = 
 CYGPATH_W = echo
 DEFS = -DHAVE_CONFIG_H
@@ -107,13 +106,13 @@ PACKAGE_VERSION =
 PATH_SEPARATOR = :
 SET_MAKE = 
 SHELL = /bin/sh
-STRIP = 
+STRIP = arm-unknown-linux-gnu-strip
 VERSION = 0.1.0
 abs_builddir = /home/wim/projects/bat3google/src
 abs_srcdir = /home/wim/projects/bat3google/src
 abs_top_builddir = /home/wim/projects/bat3google
 abs_top_srcdir = /home/wim/projects/bat3google
-ac_ct_CC = gcc
+ac_ct_CC = 
 am__include = include
 am__leading_dot = .
 am__quote = 
@@ -131,11 +130,11 @@ datarootdir = ${prefix}/share
 docdir = ${datarootdir}/doc/${PACKAGE}
 dvidir = ${docdir}
 exec_prefix = ${prefix}
-host = i686-pc-linux-gnu
-host_alias = 
-host_cpu = i686
+host = arm-unknown-linux-gnu
+host_alias = arm-unknown-linux-gnu
+host_cpu = arm
 host_os = linux-gnu
-host_vendor = pc
+host_vendor = unknown
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
@@ -158,18 +157,10 @@ sysconfdir = ${prefix}/etc
 target_alias = 
 top_builddir = ..
 top_srcdir = ..
-bat3_SOURCES = bat3.c xmalloc.c system.h aclocal.m4 bat3-opt.c bat3-opt.h
+bat3_SOURCES = bat3.c \
+	avr.c file.c IntArray.c ByteArray.c serial.c term.c net.c \
+	Process.c log.c log.h
 
-#  add " -lm" to the following if bat3 requires the math library
-bat3_LDADD = -lopts
-EXTRA_DIST = bat3.lsm.in bat3.spec.in bat3-opt.def bat3.1 manpage.tpl
-#	rm updater
-
-# info_TEXINFOS = bat3.texinfo
-# bat3_TEXINFOS = gpl.texinfo
-
-#  install the man page
-man_MANS = bat3.1
 all: all-am
 
 .SUFFIXES:
@@ -236,9 +227,16 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-include ./$(DEPDIR)/bat3-opt.Po
+include ./$(DEPDIR)/ByteArray.Po
+include ./$(DEPDIR)/IntArray.Po
+include ./$(DEPDIR)/Process.Po
+include ./$(DEPDIR)/avr.Po
 include ./$(DEPDIR)/bat3.Po
-include ./$(DEPDIR)/xmalloc.Po
+include ./$(DEPDIR)/file.Po
+include ./$(DEPDIR)/log.Po
+include ./$(DEPDIR)/net.Po
+include ./$(DEPDIR)/serial.Po
+include ./$(DEPDIR)/term.Po
 
 .c.o:
 	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -253,51 +251,6 @@ include ./$(DEPDIR)/xmalloc.Po
 #	source='$<' object='$@' libtool=no \
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
 #	$(COMPILE) -c `$(CYGPATH_W) '$<'`
-install-man1: $(man1_MANS) $(man_MANS)
-	@$(NORMAL_INSTALL)
-	test -z "$(man1dir)" || $(MKDIR_P) "$(DESTDIR)$(man1dir)"
-	@list='$(man1_MANS) $(dist_man1_MANS) $(nodist_man1_MANS)'; \
-	l2='$(man_MANS) $(dist_man_MANS) $(nodist_man_MANS)'; \
-	for i in $$l2; do \
-	  case "$$i" in \
-	    *.1*) list="$$list $$i" ;; \
-	  esac; \
-	done; \
-	for i in $$list; do \
-	  if test -f $(srcdir)/$$i; then file=$(srcdir)/$$i; \
-	  else file=$$i; fi; \
-	  ext=`echo $$i | sed -e 's/^.*\\.//'`; \
-	  case "$$ext" in \
-	    1*) ;; \
-	    *) ext='1' ;; \
-	  esac; \
-	  inst=`echo $$i | sed -e 's/\\.[0-9a-z]*$$//'`; \
-	  inst=`echo $$inst | sed -e 's/^.*\///'`; \
-	  inst=`echo $$inst | sed '$(transform)'`.$$ext; \
-	  echo " $(INSTALL_DATA) '$$file' '$(DESTDIR)$(man1dir)/$$inst'"; \
-	  $(INSTALL_DATA) "$$file" "$(DESTDIR)$(man1dir)/$$inst"; \
-	done
-uninstall-man1:
-	@$(NORMAL_UNINSTALL)
-	@list='$(man1_MANS) $(dist_man1_MANS) $(nodist_man1_MANS)'; \
-	l2='$(man_MANS) $(dist_man_MANS) $(nodist_man_MANS)'; \
-	for i in $$l2; do \
-	  case "$$i" in \
-	    *.1*) list="$$list $$i" ;; \
-	  esac; \
-	done; \
-	for i in $$list; do \
-	  ext=`echo $$i | sed -e 's/^.*\\.//'`; \
-	  case "$$ext" in \
-	    1*) ;; \
-	    *) ext='1' ;; \
-	  esac; \
-	  inst=`echo $$i | sed -e 's/\\.[0-9a-z]*$$//'`; \
-	  inst=`echo $$inst | sed -e 's/^.*\///'`; \
-	  inst=`echo $$inst | sed '$(transform)'`.$$ext; \
-	  echo " rm -f '$(DESTDIR)$(man1dir)/$$inst'"; \
-	  rm -f "$(DESTDIR)$(man1dir)/$$inst"; \
-	done
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
@@ -375,9 +328,9 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(PROGRAMS) $(MANS)
+all-am: Makefile $(PROGRAMS)
 installdirs:
-	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man1dir)"; do \
+	for dir in "$(DESTDIR)$(bindir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -424,7 +377,7 @@ info: info-am
 
 info-am:
 
-install-data-am: install-man
+install-data-am:
 
 install-dvi: install-dvi-am
 
@@ -434,7 +387,7 @@ install-html: install-html-am
 
 install-info: install-info-am
 
-install-man: install-man1
+install-man:
 
 install-pdf: install-pdf-am
 
@@ -459,9 +412,7 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binPROGRAMS uninstall-man
-
-uninstall-man: uninstall-man1
+uninstall-am: uninstall-binPROGRAMS
 
 .MAKE: install-am install-strip
 
@@ -471,27 +422,31 @@ uninstall-man: uninstall-man1
 	html-am info info-am install install-am install-binPROGRAMS \
 	install-data install-data-am install-dvi install-dvi-am \
 	install-exec install-exec-am install-html install-html-am \
-	install-info install-info-am install-man install-man1 \
-	install-pdf install-pdf-am install-ps install-ps-am \
-	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-compile mostlyclean-generic pdf pdf-am ps ps-am \
-	tags uninstall uninstall-am uninstall-binPROGRAMS \
-	uninstall-man uninstall-man1
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic pdf pdf-am ps ps-am tags uninstall \
+	uninstall-am uninstall-binPROGRAMS
 
 
-#  if you write a self-test script named `chk', uncomment the
-#  following and add `chk' to the EXTRA_DIST list
-#TESTS=chk
+#  add " -lm" to the following if bat3 requires the math library
+#bat3_LDADD=-lopts
 
-bat3.o: bat3-opt.h
-bat3-opt.o: bat3-opt.c
-bat3-opt.c bat3-opt.h: $(srcdir)/bat3-opt.def
-	autogen -L/usr/share/autogen $(srcdir)/bat3-opt.def
-
-bat3.1: $(srcdir)/bat3-opt.def
-	autogen -T manpage.tpl  $(srcdir)/bat3-opt.def
-	awk -f updater bat3.1 > tmp$$$$ && mv tmp$$$$ bat3.1
+#EXTRA_DIST=bat3.lsm.in bat3.spec.in bat3-opt.def bat3.1 manpage.tpl
+#
+#
+#bat3.o: bat3-opt.h
+#bat3-opt.o: bat3-opt.c
+#bat3-opt.c bat3-opt.h: $(srcdir)/bat3-opt.def
+#	autogen -L/usr/share/autogen $(srcdir)/bat3-opt.def
+#
+#bat3.1: $(srcdir)/bat3-opt.def
+#	autogen -T manpage.tpl  $(srcdir)/bat3-opt.def
+#	awk -f updater bat3.1 > tmp$$$$ && mv tmp$$$$ bat3.1
+#
+#
+#man_MANS=bat3.1
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

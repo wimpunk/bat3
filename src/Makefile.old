@@ -1,0 +1,25 @@
+U=../..
+include ${U}/Makefile.common
+CFLAGS+=-DNO_AA -I${U}/lib -g
+LDFLAGS+=-g
+LYB=${U}/lib/${ARCH}
+LYB=${U}/lib/arm
+
+all: dep ts732 bat3 ups-monitor
+
+dep:
+	cd ${LYB} && $(MAKE)
+
+ts732: ts732.o avr.o ${LYB}/file.o ${LYB}/IntArray.o ${LYB}/ByteArray.o ${LYB}/serial.o ${LYB}/term.o
+bat3.o: ../bat3.h
+bat3: bat3.o avr.o ${LYB}/file.o ${LYB}/IntArray.o ${LYB}/ByteArray.o ${LYB}/serial.o ${LYB}/term.o ${LYB}/net.o ${LYB}/Process.o
+ups-monitor: ups-monitor.o avr.o ${LYB}/file.o ${LYB}/IntArray.o ${LYB}/ByteArray.o ${LYB}/serial.o ${LYB}/term.o ${LYB}/net.o ${LYB}/Process.o
+
+bat3dump: bat3dump.o
+bat3save: ${LYB}/file.o ${LYB}/IntArray.o ${LYB}/ByteArray.o ${LYB}/net.o
+
+draw: ../draw.c
+	gcc -L/usr/X11R6/lib -I${LYB}/.. -lX11 -o draw ../draw.c ${LYB}/filter.o
+
+clean:
+	rm -f ts732 bat3 *.o
