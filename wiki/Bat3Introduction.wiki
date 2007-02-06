@@ -12,3 +12,6 @@ _Ideas_:
   * using *syslog*
   * help on use
   * using tcp/ip
+
+= Goal =
+With this project, I'm also trying to get used using the autotools, more about it on the AutoToolsNotes.
