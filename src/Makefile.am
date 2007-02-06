@@ -7,6 +7,8 @@ bat3_SOURCES=bat3.c \
 #  add " -lm" to the following if bat3 requires the math library
 #bat3_LDADD=-lopts
 
+EXTRA_DIST=bat3.lsm.in 
+
 #EXTRA_DIST=bat3.lsm.in bat3.spec.in bat3-opt.def bat3.1 manpage.tpl
 #
 ##  if you write a self-test script named `chk', uncomment the
