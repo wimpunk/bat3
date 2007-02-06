@@ -1,5 +1,5 @@
+#summary Little introduction about bat3
 #labels Featured
-# Little introduction about bat3
 
 = Introduction =
 
