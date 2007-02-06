@@ -14,4 +14,4 @@ _Ideas_:
   * using tcp/ip
 
 = Goal =
-With this project, I'm also trying to get used using the autotools, more about it on the AutoToolsNotes.
+With this project, I'm also trying to get used using the autotools, more about it on the AutoToolsNotes.  Meanwhile, I can get used using the google code pages. :-)
