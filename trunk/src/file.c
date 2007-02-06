@@ -198,3 +198,11 @@ ByteArrayRef filePacketGet(FILE *f,ByteArrayRef fr) {
   }
   return BAR(0,0);
 }
+/*
+ * $Id$
+ *
+ * $LastChangedDate$
+ * $Rev$
+ * $Author$
+ *
+ * */

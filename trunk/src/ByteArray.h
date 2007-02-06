@@ -40,3 +40,11 @@ BAref ByteArrayRef_Print(ByteArrayRef bar);
 
 
 #endif
+/*
+ * $Id$
+ *
+ * $LastChangedDate$
+ * $Rev$
+ * $Author$
+ *
+ * */

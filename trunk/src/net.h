@@ -17,3 +17,11 @@ inline void netAdrsFromName(struct sockaddr_in *adrs,char *name,int port);
 
 
 #endif
+/*
+ * $Id$
+ *
+ * $LastChangedDate$
+ * $Rev$
+ * $Author$
+ *
+ * */

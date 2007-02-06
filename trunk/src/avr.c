@@ -130,3 +130,11 @@ void AVRrun(char *ser,void *data,int argc,char **argv,
   tcsetattr(fileno(f),TCSANOW,&saved);
   fclose(f);
 }
+/*
+ * $Id$
+ *
+ * $LastChangedDate$
+ * $Rev$
+ * $Author$
+ *
+ * */

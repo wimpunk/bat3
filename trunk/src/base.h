@@ -10,3 +10,11 @@ typedef unsigned dword;
 #define _PACK_ __attribute__((packed))
 #define _INLINE_ __attribute__((always_inline))
 #endif
+/*
+ * $Id$
+ *
+ * $LastChangedDate$
+ * $Rev$
+ * $Author$
+ *
+ * */

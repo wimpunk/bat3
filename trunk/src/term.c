@@ -46,3 +46,11 @@ void termConfigRaw(int fd,struct termios *saved) {
   tcflush(fd, TCIFLUSH);
   tcsetattr(fd,TCSANOW,&newtio);
 }
+/*
+ * $Id$
+ *
+ * $LastChangedDate$
+ * $Rev$
+ * $Author$
+ *
+ * */

@@ -114,3 +114,11 @@ BAref ByteArrayRef_FPrint(ByteArrayRef bar,FILE *f) {
 BAref ByteArrayRef_Print(ByteArrayRef bar) {
   return ByteArrayRef_FPrint(bar,stdout);
 }
+/*
+ * $Id$
+ *
+ * $LastChangedDate$
+ * $Rev$
+ * $Author$
+ *
+ * */

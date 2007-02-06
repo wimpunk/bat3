@@ -56,3 +56,11 @@ int main() {
   fclose(f);
   return 0;
 }
+/*
+ * $Id$
+ *
+ * $LastChangedDate$
+ * $Rev$
+ * $Author$
+ *
+ * */
