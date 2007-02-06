@@ -74,3 +74,11 @@ inline int serialFramedSend(FILE *f,ByteArrayRef src) { // PURE-SE
   //printhex(pkt.arr,pkt.len);
 }
 
+/*
+ * $Id$
+ *
+ * $LastChangedDate$
+ * $Rev$
+ * $Author$
+ *
+ * */

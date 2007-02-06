@@ -122,3 +122,11 @@ struct BAT3UDPcommand {
 } _PACK_;
 
 #endif
+/*
+ * $Id$
+ *
+ * $LastChangedDate$
+ * $Rev$
+ * $Author$
+ *
+ * */

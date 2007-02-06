@@ -9,3 +9,11 @@ int serialFrame(ByteArrayRef src,ByteArrayRef dst); // CLEAN
 ByteArrayRef serialUnframe(ByteArrayRef src); // IMPURE
 inline int serialFramedSend(FILE *f,ByteArrayRef src); // PURE-SE
 #endif
+/*
+ * $Id$
+ *
+ * $LastChangedDate$
+ * $Rev$
+ * $Author$
+ *
+ * */

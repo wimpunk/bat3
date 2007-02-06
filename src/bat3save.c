@@ -158,3 +158,11 @@ int main(int argc,char *argv[]) {
   }
   close(fd);
 }
+/*
+ * $Id$
+ *
+ * $LastChangedDate$
+ * $Rev$
+ * $Author$
+ *
+ * */

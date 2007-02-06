@@ -59,3 +59,11 @@ void processDaemonize() {
     close(i);
   }
 }
+/*
+ * $Id$
+ *
+ * $LastChangedDate$
+ * $Rev$
+ * $Author$
+ *
+ * */

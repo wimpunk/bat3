@@ -26,3 +26,11 @@ void AVRrun(char *ser,void *data,int argc,char **argv,
 	    int (*callback)(ByteArrayRef,ByteArrayRef)
 	    );
 #endif
+/*
+ * $Id$
+ *
+ * $LastChangedDate$
+ * $Rev$
+ * $Author$
+ *
+ * */

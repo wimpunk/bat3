@@ -78,3 +78,11 @@ inline void netAdrsFromName(struct sockaddr_in *adrs,char *name,int port) {
   struct hostent *h = gethostbyname(name);
   netAdrsFromHost(adrs,h,port);
 }
+/*
+ * $Id$
+ *
+ * $LastChangedDate$
+ * $Rev$
+ * $Author$
+ *
+ * */

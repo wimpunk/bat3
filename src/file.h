@@ -19,3 +19,11 @@ typedef int (*dirFunc)(char *,void *);
 int dirMap(char *dirname,dirFunc f,void *);
 ByteArrayRef filePacketGet(FILE *f,ByteArrayRef fr);
 #endif
+/*
+ * $Id$
+ *
+ * $LastChangedDate$
+ * $Rev$
+ * $Author$
+ *
+ * */

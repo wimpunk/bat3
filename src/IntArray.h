@@ -17,3 +17,11 @@ struct IntArrayRef {
 inline IAref IAR(void *ptr,int len);
 
 #endif
+/*
+ * $Id$
+ *
+ * $LastChangedDate$
+ * $Rev$
+ * $Author$
+ *
+ * */
