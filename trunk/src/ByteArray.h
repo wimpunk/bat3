@@ -1,3 +1,11 @@
+/*
+ * $Id$
+ *
+ * $LastChangedDate$
+ * $Rev$
+ * $Author$
+ *
+ * */
 // copyright (c)2006 Technologic Systems
 #ifndef __BYTE_ARRAY_Z
 #define __BYTE_ARRAY_Z
@@ -40,11 +48,3 @@ BAref ByteArrayRef_Print(ByteArrayRef bar);
 
 
 #endif
-/*
- * $Id$
- *
- * $LastChangedDate$
- * $Rev$
- * $Author$
- *
- * */
