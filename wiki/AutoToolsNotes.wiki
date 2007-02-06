@@ -1,0 +1,9 @@
+#summary Notes while reading autotools information
+
+= Introduction =
+
+This page is intended to keep notes about using the autotools
+
+
+= Details =
+
