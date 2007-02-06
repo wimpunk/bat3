@@ -44,7 +44,7 @@
 #include <stdio.h>
 
 #include "ByteArray.h"
-#include "IntArray.h"
+// include "IntArray.h"
 #include "file.h"
 #include "bat3.h"
 #include "net.h"
@@ -548,6 +548,7 @@ void BAT3UDPlogUpdate(BAT3chargeState *state,BAT3reply *rep,time_t t){
 				// BAT3replyPacket_Print(ByteArrayRef bRep,void *data) {
 				bat3infoPacket_Print(&inf);
 			}
+			bat3infoPacket_Print(&inf);
 			state->numSamples = 0;
 		}
 		state->last_t = t;
@@ -597,14 +598,23 @@ void BAT3UDPlogUpdate(BAT3chargeState *state,BAT3reply *rep,time_t t){
    - change target current and on/off times
    */
 void BAT3UDPcommandCheck(BAT3chargeState *state) {
+
 	BAT3UDPcommand cmd;
 	struct timeval tv;
 	struct sockaddr_in from;
 
+	fd_set readset;
+	int i,max=-1;
+	
 	tv.tv_sec = 0;
 	tv.tv_usec = 0;
 
-	if (filesWaitRead(IAR(&state->rxSocket,1),&tv)) {
+	FD_ZERO(&readset);
+	FD_SET(state->rxSocket,&readset);
+	max=state->rxSocket;
+
+	if (select(max+1,&readset,0,0,&tv)) {
+
 		netUDPrx(state->rxSocket,BAR(&cmd,sizeof(cmd)),&from);
 		if (cmd.command == 1) {
 			sprintf(state->IPADRS,"%d.%d.%d.%d",
@@ -794,25 +804,26 @@ void bat3infoPacket_Print(bat3Info *rep) {
 
 	// int t;
         logabba(L_MIN,"InfoPacket_Print");
-        logabba(L_MIN,"Supply Voltage ADC    = %.2f\n",rep->supplyV);
-        logabba(L_MIN,"Regulated Voltage ADC = %.2f\n",rep->regV);
-        //logabba(L_MIN,"Battery Voltage ADC   = %04X\n",rep->adc6);
+        logabba(L_MIN,"Supply Voltage ADC    = %.2f\n", rep->supplyV);
+        logabba(L_MIN,"Regulated Voltage ADC = %.2f\n", rep->regV);
         logabba(L_MIN,"Battery Voltage       = %.2fV\n",rep->battV);
-        //logabba(L_MIN,"Battery Current ADC   = %04X\n",rep->adc7);
-	/*
-        logabba(L_MIN,"Battery Current       = %dmA\n",battI(rep->adc7)/1000);
-        logabba(L_MIN,"PWM LO = %04X\n",rep->pwm_lo);
-        logabba(L_MIN,"PWM T  = %04X\n",rep->pwm_t);
-        //logabba(L_MIN,"TEMP   = %04X\n",rep->temp);
-        logabba(L_MIN,"TEMP   = %.1fF\n",tempF(rep->temp-7));
+        logabba(L_MIN,"Battery Current       = %dmA\n", rep->battI);
+        logabba(L_MIN,"TEMP                  = %.1fC\n",rep->tempF);
+        logabba(L_MIN,"PWM T  = %04X\n",rep->pwmt);
+        logabba(L_MIN,"PWM LO = %.2f\n",rep->pwmlo);
 
-        logabba(L_MIN,"PWM 1 EN  = %s\n",rep->PWM1en ? "ON":"OFF");
-        logabba(L_MIN,"PWM 2 EN  = %s\n",rep->PWM2en ? "ON":"OFF");
-        logabba(L_MIN,"OFFSET EN = %s\n",rep->_offsetEn ? "OFF":"ON");
-        logabba(L_MIN,"OPAMP EN  = %s\n",rep->opampEn ? "ON":"OFF");
-        logabba(L_MIN,"BUCK EN   = %s\n",rep->_buckEn ? "OFF":"ON");
-        logabba(L_MIN,"LED       = %s\n",rep->_led ? "OFF":"ON");
-        logabba(L_MIN,"JP3       = %s\n",rep->_jp3 ? "OFF":"ON");
-        logabba(L_MIN,"Running on %s\n",rep->batRun ? "BATTERY":"LINE VOLTAGE");
-	*/
+        //logabba(L_MIN,"TEMP   = %04X\n",rep->temp);
+
+        logabba(L_MIN,"PWM 1 EN  = %s\n",rep->pwm1en ? "ON":"OFF");
+        logabba(L_MIN,"PWM 2 EN  = %s\n",rep->pwm2en ? "ON":"OFF");
+        logabba(L_MIN,"OFFSET EN = %s\n",rep->offset ? "OFF":"ON");
+        logabba(L_MIN,"OPAMP EN  = %s\n",rep->opamp ? "ON":"OFF");
+        logabba(L_MIN,"BUCK EN   = %s\n",rep->buck ? "OFF":"ON");
+        logabba(L_MIN,"LED       = %s\n",rep->led ? "OFF":"ON");
+        logabba(L_MIN,"JP3       = %s\n",rep->jp3 ? "OFF":"ON");
+        logabba(L_MIN,"Running on %s\n",rep->onbatt ? "BATTERY":"LINE VOLTAGE");
+        logabba(L_MIN,"softJP3   = %s\n",rep->softJP3 ? "OFF":"ON");
+        logabba(L_MIN,"locked    = %s\n",rep->locked ? "OFF":"ON");
+
+        logabba(L_MIN,"dVdT      = %.2f\n",rep->dVdT );
 }

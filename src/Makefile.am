@@ -1,8 +1,7 @@
 bin_PROGRAMS=bat3
 bat3_SOURCES=bat3.c \
-	avr.c file.c IntArray.c ByteArray.c serial.c term.c net.c \
+	avr.c file.c ByteArray.c serial.c term.c net.c \
 	Process.c log.c log.h
-
 
 #  add " -lm" to the following if bat3 requires the math library
 #bat3_LDADD=-lopts

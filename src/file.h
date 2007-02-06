@@ -3,13 +3,13 @@
 #define __FILE_Z
 
 #include "base.h"
-#include "IntArray.h"
+// include "IntArray.h"
 #include "ByteArray.h"
 
 struct timeval;
 void fileFlushInput(FILE *f);
 FILE *fileOpenOrDie(char *file,char *mode);
-int filesWaitRead(IAref fh,struct timeval *tv);
+// int filesWaitRead(IAref fh,struct timeval *tv);
 inline int fileSetBlocking(int fd,int on);
 int fprinthex(FILE *f,byte *str,int n);
 int printhex(byte *str,int n);
