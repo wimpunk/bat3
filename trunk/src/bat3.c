@@ -49,6 +49,10 @@
 #include "bat3.h"
 #include "net.h"
 #include "Process.h"
+#include "log.h"
+
+#define AVRDEV "/dev/ttyT3S0"
+#define LOGLEVEL 5
 
 // copyright (c)2006 Technologic Systems
 // Author: Michael Schmidt
@@ -77,6 +81,8 @@ static const char VERSION[] = "1.1.0";
 char IPADRS[128] = { 0 };
 
 void BAT3BatteryCharge(FILE *f,int mA,int on,int off,int shutdelay);
+void bat3infoPacket_Print(bat3Info *rep) ;
+void bat3replyPacket_Print(BAT3reply *rep);
 
 int BAT3requestInitFromReply(ByteArrayRef bRep,ByteArrayRef bReq) {
 	BAT3request *req = (BAT3request *)(bReq.arr);
@@ -355,8 +361,8 @@ static float tempF(short int tmp) {
 	tmpd = tmp & 0x7F;
 	tmp >>= 7;
 	f = (float)tmp + (float)tmpd / 128;
-	//printf("TempC:%f\n",f);
-	f = 9.0/5.0 * f + 32;
+	// printf("TempC:%f\n",f);
+	// f = 9.0/5.0 * f + 32;
 	//printf("TempF:%f\n",f);
 	//  f = ((float)((int)(f * 10))) / 10;
 	return f;
@@ -379,26 +385,32 @@ int BAT3task2Do(FILE *f2,int task,ByteArrayRef bReq,ByteArrayRef bRep,void *data
 
 void BAT3replyPacket_Print(ByteArrayRef bRep,void *data) {
 	BAT3reply *rep = (BAT3reply *)(bRep.arr);
+	bat3replyPacket_Print(rep);
+}
 
-	printf("Supply Voltage ADC    = %04X\n",rep->adc0);
-	printf("Regulated Voltage ADC = %04X\n",rep->adc2);
-	//printf("Battery Voltage ADC   = %04X\n",rep->adc6);
-	printf("Battery Voltage       = %.2fV (%04X)\n",battV(rep->adc6),rep->adc6);
-	//printf("Battery Current ADC   = %04X\n",rep->adc7);
-	printf("Battery Current       = %duA\n",battI(rep->adc7));
-	printf("PWM LO = %04X\n",rep->pwm_lo);
-	printf("PWM T  = %04X\n",rep->pwm_t);
-	//printf("TEMP   = %04X\n",rep->temp);
-	printf("TEMP   = %.1fF\n",tempF(rep->temp-7));
 
-	printf("PWM 1 EN  = %s\n",rep->PWM1en ? "ON":"OFF");
-	printf("PWM 2 EN  = %s\n",rep->PWM2en ? "ON":"OFF");
-	printf("OFFSET EN = %s\n",rep->_offsetEn ? "OFF":"ON");
-	printf("OPAMP EN  = %s\n",rep->opampEn ? "ON":"OFF");
-	printf("BUCK EN   = %s\n",rep->_buckEn ? "OFF":"ON");
-	printf("LED       = %s\n",rep->_led ? "OFF":"ON");
-	printf("JP3       = %s\n",rep->_jp3 ? "OFF":"ON");
-	printf("Running on %s\n",rep->batRun ? "BATTERY":"LINE VOLTAGE");
+void bat3replyPacket_Print(BAT3reply *rep){
+	
+
+	logabba(L_MIN,"Supply Voltage ADC    = %d\n",rep->adc0);
+	logabba(L_MIN,"Regulated Voltage ADC = %d\n",rep->adc2);
+	//logabba(L_MIN,"Battery Voltage ADC   = %04X\n",rep->adc6);
+	logabba(L_MIN,"Battery Voltage       = %.2fV (%04X)\n",battV(rep->adc6),rep->adc6);
+	//logabba(L_MIN,"Battery Current ADC   = %04X\n",rep->adc7);
+	logabba(L_MIN,"Battery Current       = %dmA\n",battI(rep->adc7)/1000);
+	logabba(L_MIN,"PWM LO = %04X\n",rep->pwm_lo);
+	logabba(L_MIN,"PWM T  = %04X\n",rep->pwm_t);
+	//logabba(L_MIN,"TEMP   = %04X\n",rep->temp);
+	logabba(L_MIN,"TEMP   = %.1fF\n",tempF(rep->temp-7));
+
+	logabba(L_MIN,"PWM 1 EN  = %s\n",rep->PWM1en ? "ON":"OFF");
+	logabba(L_MIN,"PWM 2 EN  = %s\n",rep->PWM2en ? "ON":"OFF");
+	logabba(L_MIN,"OFFSET EN = %s\n",rep->_offsetEn ? "OFF":"ON");
+	logabba(L_MIN,"OPAMP EN  = %s\n",rep->opampEn ? "ON":"OFF");
+	logabba(L_MIN,"BUCK EN   = %s\n",rep->_buckEn ? "OFF":"ON");
+	logabba(L_MIN,"LED       = %s\n",rep->_led ? "OFF":"ON");
+	logabba(L_MIN,"JP3       = %s\n",rep->_jp3 ? "OFF":"ON");
+	logabba(L_MIN,"Running on %s\n",rep->batRun ? "BATTERY":"LINE VOLTAGE");
 }
 
 void BAT3taskDo(FILE *f,int task,ByteArrayRef bRep,void *data) {
@@ -502,6 +514,8 @@ void BAT3chargeState_Init(BAT3chargeState *state,int targetI,int on,int off) {
 void BAT3UDPlogUpdate(BAT3chargeState *state,BAT3reply *rep,time_t t){
 	float V,I,T;
 	bat3Info inf;
+				
+	// bat3replyPacket_Print(rep);
 
 	V = battV(rep->adc6);
 	I = (float)battI(rep->adc7);
@@ -531,6 +545,8 @@ void BAT3UDPlogUpdate(BAT3chargeState *state,BAT3reply *rep,time_t t){
 
 			if (state->txSocket > -1) {
 				netUDPtx(state->txSocket,BAR(&inf,sizeof(bat3Info)),&state->to);
+				// BAT3replyPacket_Print(ByteArrayRef bRep,void *data) {
+				bat3infoPacket_Print(&inf);
 			}
 			state->numSamples = 0;
 		}
@@ -742,9 +758,61 @@ void BAT3BatteryCharge(FILE *f,int targetI,int on,int off,int shutdelay) {
 
 
 int main(int argc,char *argv[]) {
-	AVRrun("/dev/ttyT3S0",0,argc,argv,0,&BAT3requestInitFromReply,
+	
+	char *progname = argv[0];
+
+	printf("Setting loglevel to %d for %s\n",LOGLEVEL, progname);
+	setloglevel(LOGLEVEL,progname);
+	logabba(L_MIN,"Starting %s",argv[0]);
+
+	AVRrun(AVRDEV,0,argc,argv,0,&BAT3requestInitFromReply,
 			&BAT3processOptions,&BAT3replyPacket_Print,&BAT3task2Do,
 			&BAT3callback);
+
+	logabba(L_MIN,"Ending %s",argv[0]);
+
 	return 0;
 }
 
+/* struct bat3Info {
+ *     float supplyV;
+ *     float regV;
+ *     float battV;
+ *     int battI;
+ *     float tempF;
+ *     word pwmt;
+ *     float pwmlo;
+ *     dword pwm1en:1,pwm2en:1,offset:1,opamp:1,buck:1,led:1,
+ *     jp3:1,onbatt:1,softJP3:1,locked:1;
+ *     float dVdT;
+ *     dword reserved[17];
+ *  } _PACK_;
+ */
+
+
+void bat3infoPacket_Print(bat3Info *rep) {
+
+	// int t;
+        logabba(L_MIN,"InfoPacket_Print");
+        logabba(L_MIN,"Supply Voltage ADC    = %.2f\n",rep->supplyV);
+        logabba(L_MIN,"Regulated Voltage ADC = %.2f\n",rep->regV);
+        //logabba(L_MIN,"Battery Voltage ADC   = %04X\n",rep->adc6);
+        logabba(L_MIN,"Battery Voltage       = %.2fV\n",rep->battV);
+        //logabba(L_MIN,"Battery Current ADC   = %04X\n",rep->adc7);
+	/*
+        logabba(L_MIN,"Battery Current       = %dmA\n",battI(rep->adc7)/1000);
+        logabba(L_MIN,"PWM LO = %04X\n",rep->pwm_lo);
+        logabba(L_MIN,"PWM T  = %04X\n",rep->pwm_t);
+        //logabba(L_MIN,"TEMP   = %04X\n",rep->temp);
+        logabba(L_MIN,"TEMP   = %.1fF\n",tempF(rep->temp-7));
+
+        logabba(L_MIN,"PWM 1 EN  = %s\n",rep->PWM1en ? "ON":"OFF");
+        logabba(L_MIN,"PWM 2 EN  = %s\n",rep->PWM2en ? "ON":"OFF");
+        logabba(L_MIN,"OFFSET EN = %s\n",rep->_offsetEn ? "OFF":"ON");
+        logabba(L_MIN,"OPAMP EN  = %s\n",rep->opampEn ? "ON":"OFF");
+        logabba(L_MIN,"BUCK EN   = %s\n",rep->_buckEn ? "OFF":"ON");
+        logabba(L_MIN,"LED       = %s\n",rep->_led ? "OFF":"ON");
+        logabba(L_MIN,"JP3       = %s\n",rep->_jp3 ? "OFF":"ON");
+        logabba(L_MIN,"Running on %s\n",rep->batRun ? "BATTERY":"LINE VOLTAGE");
+	*/
+}
