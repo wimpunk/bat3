@@ -1,9 +1,19 @@
-#bin_PROGRAMS=bat3
-#bat3_SOURCES=bat3.c xmalloc.c system.h aclocal.m4 bat3-opt.c bat3-opt.h
 #
-##  add " -lm" to the following if bat3 requires the math library
+# $Id$
+#
+# $LastChangedDate$
+# $Rev$
+# $Author$
+#
+
+bin_PROGRAMS=bat3
+bat3_SOURCES=bat3.c log.c log.h
+
+#  add " -lm" to the following if bat3 requires the math library
 #bat3_LDADD=-lopts
-#
+
+EXTRA_DIST=bat3.lsm.in 
+
 #EXTRA_DIST=bat3.lsm.in bat3.spec.in bat3-opt.def bat3.1 manpage.tpl
 #
 ##  if you write a self-test script named `chk', uncomment the
@@ -25,4 +35,3 @@
 #
 ##  install the man page
 #man_MANS=bat3.1
-SUBDIRS=src2

@@ -37,4 +37,4 @@ dnl Checks for typedefs, structures, and compiler characteristics.
 
 dnl Checks for library functions.
 
-AC_OUTPUT(src/Makefile Makefile bat3.lsm bat3.spec)
+AC_OUTPUT(src2/Makefile Makefile bat3.lsm bat3.spec)
