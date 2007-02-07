@@ -1,6 +1,7 @@
 #include <alloca.h>
 #include <stdio.h>
 #include "serial.h"
+#include "log.h"
 
 // copyright (c)2006 Technologic Systems
 // Author: Michael Schmidt
@@ -67,14 +68,24 @@ ByteArrayRef serialUnframe(ByteArrayRef src) { // IMPURE
 }
 
 inline int serialFramedSend(FILE *f,ByteArrayRef src) { // PURE-SE
+
 	byte *buffer;
 	ByteArrayRef pkt;
 	int i,len;
+	char msg[1024];
 
 	len = src.len+serialFrameOverhead(src); // aantal escapes + 2 bijtellen
 	buffer = alloca(len);			// malloc maar met free na einde fuctie
 	pkt = BAR(buffer,len);			// pkt = ByteArray(len,buffer);
 	serialFrame(src,pkt);			// 0x7E Escaped(buffer) 0x7F
+
+	// logging
+	for (i=0,len=0; i<pkt.len; i++) {
+		len+=snprintf(msg+len, 1024-len, " %02X", pkt.arr[i]);
+	}
+	logabba(L_MIN,"Writing to bat3:%s",msg);
+
+
 	//printf("Sending packet: "); fflush(stdout);
 	i = write(fileno(f),pkt.arr,pkt.len);
 	//  tcdrain(fileno(f));

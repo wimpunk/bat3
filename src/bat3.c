@@ -812,8 +812,8 @@ void bat3infoPacket_Print(bat3Info *rep) {
 	char infoline[512];
 	
 	logabba(L_MIN, "CVSinfo: %.2f |%.2f |%.2fV |%dmA |%.1fC |%04X |%.2f |%s |%s |%s |%s |%s |%s |%s |%s |%s |%s |%.2f|",
-			rep->supplyV,
-			rep->regV,
+			battV(rep->supplyV),
+			battV(rep->regV),
 			rep->battV,
 			rep->battI,
 			rep->tempF,
