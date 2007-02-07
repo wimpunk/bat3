@@ -150,7 +150,7 @@ void BAT3writeEEPROM(FILE *f,byte adrs,byte value) {
 	req.ee_write = 1;
 	req.ee_read = 0;
 
-	printf("EE WR %02X -> [%02X]\n",value,adrs);
+	logabba(L_MIN,"EE WR %02X -> [%02X]\n",value,adrs);
 	AVRsendRequest(f,BYTE_ARRAY_REF_STRUCT(&req),BYTE_ARRAY_REF_STRUCT(&pkt),
 			&BAT3EEPROMcallback);
 }
@@ -774,6 +774,7 @@ int main(int argc,char *argv[]) {
 	printf("Setting loglevel to %d for %s\n",LOGLEVEL, progname);
 	setloglevel(LOGLEVEL,progname);
 	logabba(L_MIN,"Starting %s",argv[0]);
+	logabba(L_MIN, "CVSinfo: Supply Voltage ADC    | Regulated Voltage ADC | Battery Voltage       | Battery Current       | TEMP                  | PWM T  | PWM LO | PWM 1 EN  | PWM 2 EN  | OFFSET EN | OPAMP EN  | BUCK EN   | LED       | JP3       | Running on | softJP3   | locked    | dVdT      |");
 
 	AVRrun(AVRDEV,0,argc,argv,0,&BAT3requestInitFromReply,
 			&BAT3processOptions,&BAT3replyPacket_Print,&BAT3task2Do,
@@ -801,8 +802,37 @@ int main(int argc,char *argv[]) {
 
 
 void bat3infoPacket_Print(bat3Info *rep) {
+/*   inf.offset = !rep->_offsetEn;
+ *   inf.buck = !rep->_buckEn;
+ *   inf.led = !rep->_led;
+ *   inf.jp3= !rep->_jp3;
+ */
 
 	// int t;
+	char infoline[512];
+	
+	logabba(L_MIN, "CVSinfo: %.2f |%.2f |%.2fV |%dmA |%.1fC |%04X |%.2f |%s |%s |%s |%s |%s |%s |%s |%s |%s |%s |%.2f|",
+			rep->supplyV,
+			rep->regV,
+			rep->battV,
+			rep->battI,
+			rep->tempF,
+			rep->pwmt,
+			rep->pwmlo,
+			rep->pwm1en ? "ON":"OFF",
+			rep->pwm2en ? "ON":"OFF",
+			!rep->offset ? "OFF":"ON",
+			rep->opamp ? "ON":"OFF",
+			!rep->buck ? "OFF":"ON",
+			!rep->led ? "OFF":"ON",
+			!rep->jp3 ? "OFF":"ON",
+			rep->onbatt ? "BATTERY":"LINE VOLTAGE",
+			rep->softJP3 ? "OFF":"ON",
+			rep->locked ? "OFF":"ON",
+			rep->dVdT );
+
+
+	/*
         logabba(L_MIN,"InfoPacket_Print");
         logabba(L_MIN,"Supply Voltage ADC    = %.2f\n", rep->supplyV);
         logabba(L_MIN,"Regulated Voltage ADC = %.2f\n", rep->regV);
@@ -816,14 +846,15 @@ void bat3infoPacket_Print(bat3Info *rep) {
 
         logabba(L_MIN,"PWM 1 EN  = %s\n",rep->pwm1en ? "ON":"OFF");
         logabba(L_MIN,"PWM 2 EN  = %s\n",rep->pwm2en ? "ON":"OFF");
-        logabba(L_MIN,"OFFSET EN = %s\n",rep->offset ? "OFF":"ON");
+        logabba(L_MIN,"OFFSET EN = %s\n",!rep->offset ? "OFF":"ON");
         logabba(L_MIN,"OPAMP EN  = %s\n",rep->opamp ? "ON":"OFF");
-        logabba(L_MIN,"BUCK EN   = %s\n",rep->buck ? "OFF":"ON");
-        logabba(L_MIN,"LED       = %s\n",rep->led ? "OFF":"ON");
-        logabba(L_MIN,"JP3       = %s\n",rep->jp3 ? "OFF":"ON");
+        logabba(L_MIN,"BUCK EN   = %s\n",!rep->buck ? "OFF":"ON");
+        logabba(L_MIN,"LED       = %s\n",!rep->led ? "OFF":"ON");
+        logabba(L_MIN,"JP3       = %s\n",!rep->jp3 ? "OFF":"ON");
         logabba(L_MIN,"Running on %s\n",rep->onbatt ? "BATTERY":"LINE VOLTAGE");
         logabba(L_MIN,"softJP3   = %s\n",rep->softJP3 ? "OFF":"ON");
         logabba(L_MIN,"locked    = %s\n",rep->locked ? "OFF":"ON");
 
         logabba(L_MIN,"dVdT      = %.2f\n",rep->dVdT );
+	*/
 }
