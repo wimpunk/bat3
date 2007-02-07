@@ -14,6 +14,8 @@
 #include "file.h"
 #include "term.h"
 
+#include "log.h"
+
 // copyright (c)2006 Technologic Systems
 // Author: Michael Schmidt
 
@@ -24,7 +26,7 @@ ByteArrayRef AVRreplyGet(FILE *f,ByteArrayRef pReply) {
 	pReply.len = 0;
 	b = filePacketGet(f,pReply);
 	if (!b.arr) {
-		printf("Failed to communicate with AVR\n");
+		logabba(L_MIN, "Failed to communicate with AVR\n");
 		exit(3);
 	}
 	return b;
@@ -46,7 +48,7 @@ ByteArrayRef AVRsendRequest(FILE *f,ByteArrayRef req,ByteArrayRef ret,
 	while (retries--) {
 		b = filePacketGet(f,ret);
 		if (!b.arr) {
-			printf("Failed to communicate with AVR\n");
+			logabba(L_MIN, "Failed to communicate with AVR\n");
 			exit(3);
 		}
 		if (b.len == 0) {
@@ -62,7 +64,7 @@ ByteArrayRef AVRsendRequest(FILE *f,ByteArrayRef req,ByteArrayRef ret,
 			replies_till_retry = 2;
 		}
 	}
-	printf("Failed to change AVR state\n");
+	logabba(L_MIN, "Failed to change AVR state\n");
 	exit (3);
 	//return BYTE_ARRAY_REF(0,0);
 }
