@@ -76,7 +76,7 @@ TO DO:
 1. Add another command we respond to while charging the battery,
 which puts the system to sleep for a while.
 */
-static const char VERSION[] = "1.1.0";
+static const char VERSION[] = "$Rev$";
 
 char IPADRS[128] = { 0 };
 
@@ -85,9 +85,11 @@ void bat3infoPacket_Print(bat3Info *rep) ;
 void bat3replyPacket_Print(BAT3reply *rep);
 
 int BAT3requestInitFromReply(ByteArrayRef bRep,ByteArrayRef bReq) {
+
 	BAT3request *req = (BAT3request *)(bReq.arr);
 	BAT3reply *rep = (BAT3reply *)(bRep.arr);
 
+	logabba(L_MIN, "start BAT3requestInitFromReply");
 	req->outputs = rep->outputs;
 	req->pwm_lo = rep->pwm_lo;
 	req->pwm_t = rep->pwm_t;
@@ -102,6 +104,7 @@ int BAT3requestInitFromReply(ByteArrayRef bRep,ByteArrayRef bReq) {
 			req->_led = 0;
 		}
 	}
+	logabba(L_MIN, "Stop BAT3requestInitFromReply");
 	return sizeof(BAT3request);
 }
 
@@ -177,7 +180,10 @@ byte BAT3readEEPROM(FILE *f,byte adrs,BAT3reply *pkt) {
 	return pkt->ee_data;
 }
 
-int BAT3callback(ByteArrayRef bReq,ByteArrayRef bRep);
+int BAT3callback(ByteArrayRef bReq,ByteArrayRef bRep)
+{
+	logabba(L_MIN, "BAT3callback called");
+}
 
 // & 1           -> send a request
 // & 0xFFFFFFFE  -> other stuff to do first, call taskDo
@@ -226,32 +232,32 @@ int BAT3processOptions(FILE *file,ByteArrayRef bReq,void *data,int *loops,
 			case 0: // pwm1 en
 				doSomething |= 1;
 				req->PWM1en = atoi(optarg);
-				printf("PWM1: %s\n",req->PWM1en?"on":"off");
+				logabba(L_INFO, "PWM1: %s\n",req->PWM1en?"on":"off");
 				break;
 			case 1: // pwm2 en
 				doSomething |= 1;
 				req->PWM2en = atoi(optarg);
-				printf("PWM2: %s\n",req->PWM2en?"on":"off");
+				logabba(L_INFO, "PWM2: %s\n",req->PWM2en?"on":"off");
 				break;
 			case 2: // offset en
 				doSomething |= 1;
 				req->_offsetEn = !atoi(optarg);
-				printf("Offset: %s\n",req->_offsetEn?"off":"on");
+				logabba(L_INFO, "Offset: %s\n",req->_offsetEn?"off":"on");
 				break;
 			case 3: // opamp en
 				doSomething |= 1;
 				req->opampEn = atoi(optarg);
-				printf("OPAMP: %s\n",req->opampEn?"on":"off");
+				logabba(L_INFO, "OPAMP: %s\n",req->opampEn?"on":"off");
 				break;
 			case 4: // buck en
 				doSomething |= 1;
 				req->_buckEn = !atoi(optarg);
-				printf("Buck: %s\n",req->_buckEn?"off":"on");
+				logabba(L_INFO, "Buck: %s\n",req->_buckEn?"off":"on");
 				break;
 			case 5: // led en
 				doSomething |= 1;
 				req->_led = !atoi(optarg);
-				printf("LED: %s\n",req->_led?"off":"on");
+				logabba(L_INFO, "LED: %s\n",req->_led?"off":"on");
 				break;
 			case 6: // pwmlo time
 				doSomething |= 1;
@@ -259,12 +265,12 @@ int BAT3processOptions(FILE *file,ByteArrayRef bReq,void *data,int *loops,
 				if (req->pwm_t < req->pwm_lo) {
 					req->pwm_t = req->pwm_lo;
 				}
-				printf("PWM LO= %d\n",req->pwm_lo);
+				logabba(L_INFO, "PWM LO= %d\n",req->pwm_lo);
 				break;
 			case 7: // pwmtotal time
 				doSomething |= 1;
 				req->pwm_t = atoi(optarg);
-				printf("PWM T= %d\n",req->pwm_t);
+				logabba(L_INFO, "PWM T= %d\n",req->pwm_t);
 				break;
 			case 8: // help
 				printf(
@@ -329,7 +335,7 @@ int BAT3processOptions(FILE *file,ByteArrayRef bReq,void *data,int *loops,
 			case 14: // log
 				strncpy(IPADRS,optarg,128);
 				optarg[127] = 0;
-				printf("Logging to: %s\n",IPADRS);
+				logabba(L_INFO, "UDP Logging to: %s\n",IPADRS);
 				break;
 			case 15: // on
 				on = atoi(optarg);
@@ -338,11 +344,11 @@ int BAT3processOptions(FILE *file,ByteArrayRef bReq,void *data,int *loops,
 				off = atoi(optarg);
 				break;
 			case 17: // version
-				printf("bat3, version %s\n",VERSION);
+				logabba(L_INFO, "bat3, version %s\n",VERSION);
 				break;
 			case 18: // shutdown
 				shutdelay = atoi(optarg);
-				printf("Automatic shutdown %d seconds after power failure\n",shutdelay);
+				logabba(L_INFO, "Automatic shutdown %d seconds after power failure\n",shutdelay);
 				break;
 
 		}
@@ -390,7 +396,7 @@ void BAT3replyPacket_Print(ByteArrayRef bRep,void *data) {
 
 
 void bat3replyPacket_Print(BAT3reply *rep){
-	
+
 
 	logabba(L_MIN,"Supply Voltage ADC    = %d\n",rep->adc0);
 	logabba(L_MIN,"Regulated Voltage ADC = %d\n",rep->adc2);
@@ -514,7 +520,7 @@ void BAT3chargeState_Init(BAT3chargeState *state,int targetI,int on,int off) {
 void BAT3UDPlogUpdate(BAT3chargeState *state,BAT3reply *rep,time_t t){
 	float V,I,T;
 	bat3Info inf;
-				
+
 	// bat3replyPacket_Print(rep);
 
 	V = battV(rep->adc6);
@@ -550,311 +556,264 @@ void BAT3UDPlogUpdate(BAT3chargeState *state,BAT3reply *rep,time_t t){
 			}
 			bat3infoPacket_Print(&inf);
 			state->numSamples = 0;
-		}
-		state->last_t = t;
+			}
+			state->last_t = t;
 
-		// implement automatic on/off at duty cycle
-		// note: time on should be long enough to lock or we won't!
-		if (!rep->batRun) {
-			if (state->timer > 0) {
-				state->timer--;
-				if (state->timer == 0) {
-					if (state->time_off > 0) {
-						state->targetI = 0;
-					} else {
+			// implement automatic on/off at duty cycle
+			// note: time on should be long enough to lock or we won't!
+			if (!rep->batRun) {
+				if (state->timer > 0) {
+					state->timer--;
+					if (state->timer == 0) {
+						if (state->time_off > 0) {
+							state->targetI = 0;
+						} else {
+							state->timer = state->time_on;
+						}
+					}
+				} else {
+					state->timer--;
+					if (state->timer <= -state->time_off) {
+						if (state->time_on > 0) {
+							state->targetI = state->masterI;
+							state->locked = 0;
+						}
 						state->timer = state->time_on;
 					}
 				}
-			} else {
-				state->timer--;
-				if (state->timer <= -state->time_off) {
-					if (state->time_on > 0) {
-						state->targetI = state->masterI;
-						state->locked = 0;
-					}
-					state->timer = state->time_on;
-				}
 			}
 		}
-	}
-	if (state->numSamples < 32) {
-		state->V[state->numSamples] = V;
-		state->I[state->numSamples] = I;
-		state->T[state->numSamples] = T;
-		state->pwm[state->numSamples] = (float)rep->pwm_lo;
-		state->numSamples++;
-	}
-}
-
-
-/*
-   Listens on a UDP port for commands
-   - enable/disable sending BAT3 info packets to specified IP/port
-   - info packets are sent at 1Hz
-   - analog values are smoothed/averaged over one second
-   - analog values are not sent unless at least 16 samples are received
-   - that's probably not necessary so we won't do that for now
-   - change target current
-   - change target current and on/off times
-   */
-void BAT3UDPcommandCheck(BAT3chargeState *state) {
-
-	BAT3UDPcommand cmd;
-	struct timeval tv;
-	struct sockaddr_in from;
-
-	fd_set readset;
-	int i,max=-1;
-	
-	tv.tv_sec = 0;
-	tv.tv_usec = 0;
-
-	FD_ZERO(&readset);
-	FD_SET(state->rxSocket,&readset);
-	max=state->rxSocket;
-
-	if (select(max+1,&readset,0,0,&tv)) {
-
-		netUDPrx(state->rxSocket,BAR(&cmd,sizeof(cmd)),&from);
-		if (cmd.command == 1) {
-			sprintf(state->IPADRS,"%d.%d.%d.%d",
-					(from.sin_addr.s_addr)&0xFF,
-					(from.sin_addr.s_addr>>8)&0xFF,
-					(from.sin_addr.s_addr>>16)&0xFF,
-					(from.sin_addr.s_addr>>24)&0xFF);
-			state->toPort = cmd.cmd1.port;
-			if (state->txSocket > -1) {
-				close(state->txSocket);
-			}
-			state->txSocket = netUDPopen(state->toPort,0);
-			netAdrsFromName(&state->to,state->IPADRS,state->toPort);
-		} else if (cmd.command == 2) {
-			if (state->txSocket > -1) {
-				close(state->txSocket);
-			}
-			state->txSocket = -1;
-		} else if (cmd.command == 3) {
-			//printf("\nNew target current: %dmA       \n",cmd.cmd3.targetI);
-			if (abs(state->targetI-cmd.cmd3.targetI*1000) > 3000) {
-				state->locked = 0;
-				state->lock_hi = state->lock_max + 1;
-				state->lock_lo = 0;
-			}
-			state->targetI = state->masterI = cmd.cmd3.targetI * 1000;
-			state->time_on = 1;
-			state->time_off = 0;
-			state->timer = 1;
-		} else if (cmd.command == 4) {
-			if (abs(state->targetI-cmd.cmd4.targetI*1000) > 3000) {
-				state->locked = 0;
-				state->lock_hi = state->lock_max + 1;
-				state->lock_lo = 0;
-			}
-			state->targetI = state->masterI = cmd.cmd4.targetI * 1000;
-			state->time_on = cmd.cmd4.time_on;
-			if (state->time_on < 0) {
-				state->time_on = 0;
-			}
-			state->time_off = cmd.cmd4.time_off;
-			if (state->time_off < 0) {
-				state->time_off = 0;
-			}
-			state->timer = state->time_on;
+		if (state->numSamples < 32) {
+			state->V[state->numSamples] = V;
+			state->I[state->numSamples] = I;
+			state->T[state->numSamples] = T;
+			state->pwm[state->numSamples] = (float)rep->pwm_lo;
+			state->numSamples++;
 		}
 	}
-
-}
-
-/*
-   This routine does the following:
-   1. Tries to maintain charge current at targetI (possibly 0)
-   - if current falls out of regulation, reset (to 0)
-   2. Listens on a UDP port for commands
-   3. Whenever a power-failure occurs, waits for a user-defined
-   delay and then initiates shutdown.  /etc/init.d/ups-monitor
-   (or other file, depending on your distribution) must set the
-   softJP3 bit.
-   There are two states:
-   SEEKING
-   - trying to find the correct PWM value for the current we want
-   - we use a binary search pattern
-   LOCKED
-   - trying to maintain the current PWM value for the current we want
-   - we use a linear step to maintain the current we want
-
-*/
-void BAT3BatteryCharge(FILE *f,int targetI,int on,int off,int shutdelay) {
-	BAT3chargeState state;
-	byte req1[256],rep1[256];
-	ByteArrayRef bReq = BAR(req1,256),bRep = BAR(rep1,256);
-	BAT3request *req = (BAT3request *)(bReq.arr);
-	BAT3reply *rep = (BAT3reply *)(bRep.arr);
-	time_t t,last_t=0;
-	int shutdown_pending = -1;
-
-	processDaemonize();
-	BAT3chargeState_Init(&state,targetI,on,off);
-	while (state.running) {
-		// check for commands
-		BAT3UDPcommandCheck(&state);
-		// take a sample
-		bRep = AVRreplyGet(f,bRep);
-		bReq.len = BAT3requestInitFromReply(bRep,bReq);
-		// add sample to log
-		time((time_t *)&t);
-		BAT3UDPlogUpdate(&state,rep,t);
-		// if running on battery, update shutdown state
-		if (t != last_t) {
-			if (rep->batRun) { // running on battery?
-				if (shutdelay > 0) { // auto-shutdown enabled?
-					if (shutdown_pending > 0) { // already pending shutdown?
-						if (--shutdown_pending == 0) { // time to shutdown now?
-							// Change the next line if you need a different command
-							// to initiate a shut down on your system
-							system("shutdown -h now");
-							shutdown_pending = 15; // just in case shutdown fails???
-						}
-					} else { // not yet pending shutdown
-						shutdown_pending = shutdelay;
-					}
-				}
-			} else { // not running on battery
-				shutdown_pending = -1;
-			}
-			last_t = t;
-		}
-		// update PWM
-		req->PWM1en = req->PWM2en = (state.targetI > 0);
-		req->opampEn = 1;
-		req->pwm_t = state.lock_max;
-		if (state.locked) {
-			if (!rep->batRun && state.targetI > 0 
-					&& battI(rep->adc7) - state.targetI > 3000) {
-				if (req->pwm_lo < state.lock_max) {
-					req->pwm_lo++;
-				} else {
-					//printf("\nCan't get current low enough\n");
-					state.targetI = 0;
-				}
-			} else if (!rep->batRun && state.targetI > 0 
-					&& battI(rep->adc7) - state.targetI < -3000) {
-				if (req->pwm_lo > 0) {
-					req->pwm_lo--;
-				} else {
-					//printf("\nCan't get current high enough\n");
-					state.targetI = 0;
-				}
-			}
-		} else {
-			if (state.lock_hi > state.lock_max) {
-				// do nothing - haven't got initial reading yet
-				state.lock_hi = state.lock_max;
-			} else if (battI(rep->adc7) > state.targetI) {
-				state.lock_lo = req->pwm_lo;
-			} else {
-				state.lock_hi = req->pwm_lo;
-			}
-			req->pwm_lo = state.lock_lo + (state.lock_hi - state.lock_lo) / 2;
-			if (state.lock_hi - state.lock_lo < 2) {
-				state.locked = 1;
-			}
-		}
-
-		// update state, take another sample and throw it away
-		AVRsendRequest(f,bReq,bRep,BAT3callback);
-		//bRep = AVRreplyGet(f,bRep);
-	}
-}
-
-
-int main(int argc,char *argv[]) {
-	
-	char *progname = argv[0];
-
-	printf("Setting loglevel to %d for %s\n",LOGLEVEL, progname);
-	setloglevel(LOGLEVEL,progname);
-	logabba(L_MIN,"Starting %s",argv[0]);
-	logabba(L_MIN, "CVSinfo: Supply Voltage ADC    | Regulated Voltage ADC | Battery Voltage       | Battery Current       | TEMP                  | PWM T  | PWM LO | PWM 1 EN  | PWM 2 EN  | OFFSET EN | OPAMP EN  | BUCK EN   | LED       | JP3       | Running on | softJP3   | locked    | dVdT      |");
-
-	AVRrun(AVRDEV,0,argc,argv,0,&BAT3requestInitFromReply,
-			&BAT3processOptions,&BAT3replyPacket_Print,&BAT3task2Do,
-			&BAT3callback);
-
-	logabba(L_MIN,"Ending %s",argv[0]);
-
-	return 0;
-}
-
-/* struct bat3Info {
- *     float supplyV;
- *     float regV;
- *     float battV;
- *     int battI;
- *     float tempF;
- *     word pwmt;
- *     float pwmlo;
- *     dword pwm1en:1,pwm2en:1,offset:1,opamp:1,buck:1,led:1,
- *     jp3:1,onbatt:1,softJP3:1,locked:1;
- *     float dVdT;
- *     dword reserved[17];
- *  } _PACK_;
- */
-
-
-void bat3infoPacket_Print(bat3Info *rep) {
-/*   inf.offset = !rep->_offsetEn;
- *   inf.buck = !rep->_buckEn;
- *   inf.led = !rep->_led;
- *   inf.jp3= !rep->_jp3;
- */
-
-	// int t;
-	char infoline[512];
-	
-	logabba(L_MIN, "CVSinfo: %.2f |%.2f |%.2fV |%dmA |%.1fC |%04X |%.2f |%s |%s |%s |%s |%s |%s |%s |%s |%s |%s |%.2f|",
-			battV(rep->supplyV),
-			battV(rep->regV),
-			rep->battV,
-			rep->battI,
-			rep->tempF,
-			rep->pwmt,
-			rep->pwmlo,
-			rep->pwm1en ? "ON":"OFF",
-			rep->pwm2en ? "ON":"OFF",
-			!rep->offset ? "OFF":"ON",
-			rep->opamp ? "ON":"OFF",
-			!rep->buck ? "OFF":"ON",
-			!rep->led ? "OFF":"ON",
-			!rep->jp3 ? "OFF":"ON",
-			rep->onbatt ? "BATTERY":"LINE VOLTAGE",
-			rep->softJP3 ? "OFF":"ON",
-			rep->locked ? "OFF":"ON",
-			rep->dVdT );
 
 
 	/*
-        logabba(L_MIN,"InfoPacket_Print");
-        logabba(L_MIN,"Supply Voltage ADC    = %.2f\n", rep->supplyV);
-        logabba(L_MIN,"Regulated Voltage ADC = %.2f\n", rep->regV);
-        logabba(L_MIN,"Battery Voltage       = %.2fV\n",rep->battV);
-        logabba(L_MIN,"Battery Current       = %dmA\n", rep->battI);
-        logabba(L_MIN,"TEMP                  = %.1fC\n",rep->tempF);
-        logabba(L_MIN,"PWM T  = %04X\n",rep->pwmt);
-        logabba(L_MIN,"PWM LO = %.2f\n",rep->pwmlo);
+	   Listens on a UDP port for commands
+	   - enable/disable sending BAT3 info packets to specified IP/port
+	   - info packets are sent at 1Hz
+	   - analog values are smoothed/averaged over one second
+	   - analog values are not sent unless at least 16 samples are received
+	   - that's probably not necessary so we won't do that for now
+	   - change target current
+	   - change target current and on/off times
+	   */
 
-        //logabba(L_MIN,"TEMP   = %04X\n",rep->temp);
+	/* TODO: replace this with the kk stuff */
+	void BAT3UDPcommandCheck(BAT3chargeState *state) {
 
-        logabba(L_MIN,"PWM 1 EN  = %s\n",rep->pwm1en ? "ON":"OFF");
-        logabba(L_MIN,"PWM 2 EN  = %s\n",rep->pwm2en ? "ON":"OFF");
-        logabba(L_MIN,"OFFSET EN = %s\n",!rep->offset ? "OFF":"ON");
-        logabba(L_MIN,"OPAMP EN  = %s\n",rep->opamp ? "ON":"OFF");
-        logabba(L_MIN,"BUCK EN   = %s\n",!rep->buck ? "OFF":"ON");
-        logabba(L_MIN,"LED       = %s\n",!rep->led ? "OFF":"ON");
-        logabba(L_MIN,"JP3       = %s\n",!rep->jp3 ? "OFF":"ON");
-        logabba(L_MIN,"Running on %s\n",rep->onbatt ? "BATTERY":"LINE VOLTAGE");
-        logabba(L_MIN,"softJP3   = %s\n",rep->softJP3 ? "OFF":"ON");
-        logabba(L_MIN,"locked    = %s\n",rep->locked ? "OFF":"ON");
+		BAT3UDPcommand cmd;
+		struct timeval tv;
+		struct sockaddr_in from;
 
-        logabba(L_MIN,"dVdT      = %.2f\n",rep->dVdT );
-	*/
-}
+		fd_set readset;
+		int i,max=-1;
+
+		tv.tv_sec = 0;
+		tv.tv_usec = 0;
+
+		FD_ZERO(&readset);
+		FD_SET(state->rxSocket,&readset);
+		max=state->rxSocket;
+
+		if (select(max+1,&readset,0,0,&tv)) {
+
+			netUDPrx(state->rxSocket,BAR(&cmd,sizeof(cmd)),&from);
+			if (cmd.command == 1) {
+				sprintf(state->IPADRS,"%d.%d.%d.%d",
+						(from.sin_addr.s_addr)&0xFF,
+						(from.sin_addr.s_addr>>8)&0xFF,
+						(from.sin_addr.s_addr>>16)&0xFF,
+						(from.sin_addr.s_addr>>24)&0xFF);
+				state->toPort = cmd.cmd1.port;
+				if (state->txSocket > -1) {
+					close(state->txSocket);
+				}
+				state->txSocket = netUDPopen(state->toPort,0);
+				netAdrsFromName(&state->to,state->IPADRS,state->toPort);
+			} else if (cmd.command == 2) {
+				if (state->txSocket > -1) {
+					close(state->txSocket);
+				}
+				state->txSocket = -1;
+			} else if (cmd.command == 3) {
+				//printf("\nNew target current: %dmA       \n",cmd.cmd3.targetI);
+				if (abs(state->targetI-cmd.cmd3.targetI*1000) > 3000) {
+					state->locked = 0;
+					state->lock_hi = state->lock_max + 1;
+					state->lock_lo = 0;
+				}
+				state->targetI = state->masterI = cmd.cmd3.targetI * 1000;
+				state->time_on = 1;
+				state->time_off = 0;
+				state->timer = 1;
+			} else if (cmd.command == 4) {
+				if (abs(state->targetI-cmd.cmd4.targetI*1000) > 3000) {
+					state->locked = 0;
+					state->lock_hi = state->lock_max + 1;
+					state->lock_lo = 0;
+				}
+				state->targetI = state->masterI = cmd.cmd4.targetI * 1000;
+				state->time_on = cmd.cmd4.time_on;
+				if (state->time_on < 0) {
+					state->time_on = 0;
+				}
+				state->time_off = cmd.cmd4.time_off;
+				if (state->time_off < 0) {
+					state->time_off = 0;
+				}
+				state->timer = state->time_on;
+			}
+		}
+
+	}
+
+	/*
+	   This routine does the following:
+	   1. Tries to maintain charge current at targetI (possibly 0)
+	   - if current falls out of regulation, reset (to 0)
+	   2. Listens on a UDP port for commands
+	   3. Whenever a power-failure occurs, waits for a user-defined
+	   delay and then initiates shutdown.  /etc/init.d/ups-monitor
+	   (or other file, depending on your distribution) must set the
+	   softJP3 bit.
+	   There are two states:
+	   SEEKING
+	   - trying to find the correct PWM value for the current we want
+	   - we use a binary search pattern
+	   LOCKED
+	   - trying to maintain the current PWM value for the current we want
+	   - we use a linear step to maintain the current we want
+
+*/
+	void BAT3BatteryCharge(FILE *f,int targetI,int on,int off,int shutdelay) {
+		BAT3chargeState state;
+		byte req1[256],rep1[256];
+		ByteArrayRef bReq = BAR(req1,256),bRep = BAR(rep1,256);
+		BAT3request *req = (BAT3request *)(bReq.arr);
+		BAT3reply *rep = (BAT3reply *)(bRep.arr);
+		time_t t,last_t=0;
+		int shutdown_pending = -1;
+
+		processDaemonize();
+		BAT3chargeState_Init(&state,targetI,on,off);
+		while (state.running) {
+			// check for commands
+			BAT3UDPcommandCheck(&state);
+			// take a sample
+			bRep = AVRreplyGet(f,bRep);
+			bReq.len = BAT3requestInitFromReply(bRep,bReq);
+			// add sample to log
+			time((time_t *)&t);
+			BAT3UDPlogUpdate(&state,rep,t);
+			// if running on battery, update shutdown state
+			if (t != last_t) {
+				if (rep->batRun) { // running on battery?
+					if (shutdelay > 0) { // auto-shutdown enabled?
+						if (shutdown_pending > 0) { // already pending shutdown?
+							if (--shutdown_pending == 0) { // time to shutdown now?
+								// Change the next line if you need a different command
+								// to initiate a shut down on your system
+								system("shutdown -h now");
+								shutdown_pending = 15; // just in case shutdown fails???
+							}
+						} else { // not yet pending shutdown
+							shutdown_pending = shutdelay;
+						}
+					}
+				} else { // not running on battery
+					shutdown_pending = -1;
+				}
+				last_t = t;
+			}
+			// update PWM
+			req->PWM1en = req->PWM2en = (state.targetI > 0);
+			req->opampEn = 1;
+			req->pwm_t = state.lock_max;
+			if (state.locked) {
+				if (!rep->batRun && state.targetI > 0 
+						&& battI(rep->adc7) - state.targetI > 3000) {
+					if (req->pwm_lo < state.lock_max) {
+						req->pwm_lo++;
+					} else {
+						//printf("\nCan't get current low enough\n");
+						state.targetI = 0;
+					}
+				} else if (!rep->batRun && state.targetI > 0 
+						&& battI(rep->adc7) - state.targetI < -3000) {
+					if (req->pwm_lo > 0) {
+						req->pwm_lo--;
+					} else {
+						//printf("\nCan't get current high enough\n");
+						state.targetI = 0;
+					}
+				}
+			} else {
+				if (state.lock_hi > state.lock_max) {
+					// do nothing - haven't got initial reading yet
+					state.lock_hi = state.lock_max;
+				} else if (battI(rep->adc7) > state.targetI) {
+					state.lock_lo = req->pwm_lo;
+				} else {
+					state.lock_hi = req->pwm_lo;
+				}
+				req->pwm_lo = state.lock_lo + (state.lock_hi - state.lock_lo) / 2;
+				if (state.lock_hi - state.lock_lo < 2) {
+					state.locked = 1;
+				}
+			}
+
+			// update state, take another sample and throw it away
+			AVRsendRequest(f,bReq,bRep,BAT3callback);
+			//bRep = AVRreplyGet(f,bRep);
+		}
+	}
+
+
+	int main(int argc,char *argv[]) {
+
+		char *progname = argv[0];
+
+		printf("Setting loglevel to %d for %s\n",LOGLEVEL, progname);
+		setloglevel(LOGLEVEL,progname);
+		logabba(L_MIN,"Starting %s",argv[0]);
+		logabba(L_MIN, "CVSinfo: Supply Voltage ADC    | Regulated Voltage ADC | Battery Voltage       | Battery Current       | TEMP                  | PWM T  | PWM LO | PWM 1 EN  | PWM 2 EN  | OFFSET EN | OPAMP EN  | BUCK EN   | LED       | JP3       | Running on | softJP3   | locked    | dVdT      |");
+
+		AVRrun(AVRDEV,0,argc,argv,0,&BAT3requestInitFromReply,
+				&BAT3processOptions,&BAT3replyPacket_Print,&BAT3task2Do,
+				&BAT3callback);
+
+		logabba(L_MIN,"Ending %s",argv[0]);
+
+		return 0;
+	}
+
+	void bat3infoPacket_Print(bat3Info *rep) {
+		char infoline[512];
+
+		logabba(L_MIN, "CVSinfo: %.2f |%.2f |%.2fV |%dmA |%.1fC |%04X |%.2f |%s |%s |%s |%s |%s |%s |%s |%s |%s |%s |%.2f|",
+				battV(rep->supplyV),
+				battV(rep->regV),
+				rep->battV,
+				rep->battI,
+				rep->tempF,
+				rep->pwmt,
+				rep->pwmlo,
+				rep->pwm1en ? "ON":"OFF",
+				rep->pwm2en ? "ON":"OFF",
+				!rep->offset ? "OFF":"ON",
+				rep->opamp ? "ON":"OFF",
+				!rep->buck ? "OFF":"ON",
+				!rep->led ? "OFF":"ON",
+				!rep->jp3 ? "OFF":"ON",
+				rep->onbatt ? "BATTERY":"LINE VOLTAGE",
+				rep->softJP3 ? "OFF":"ON",
+				rep->locked ? "OFF":"ON",
+				rep->dVdT );
+
+	}
