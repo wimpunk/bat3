@@ -51,12 +51,13 @@
 #include "Process.h"
 #include "log.h"
 
-#define AVRDEV "/dev/ttyT3S0"
+#define AVRDEV "/dev/ttyTS0"
 #define LOGLEVEL 5
 
 // copyright (c)2006 Technologic Systems
 // Author: Michael Schmidt
 
+int BAT3callback(ByteArrayRef bReq,ByteArrayRef bRep) ;
 /*
    BAT3 Utility / Charging Daemon
 
@@ -180,10 +181,12 @@ byte BAT3readEEPROM(FILE *f,byte adrs,BAT3reply *pkt) {
 	return pkt->ee_data;
 }
 
-int BAT3callback(ByteArrayRef bReq,ByteArrayRef bRep)
+/*
+  int BAT3callback(ByteArrayRef bReq,ByteArrayRef bRep)
 {
 	logabba(L_MIN, "BAT3callback called");
 }
+*/
 
 // & 1           -> send a request
 // & 0xFFFFFFFE  -> other stuff to do first, call taskDo
