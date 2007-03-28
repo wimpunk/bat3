@@ -1,22 +1,11 @@
-/*****************************************************************************
-// Project    : ABBA 2000 - ABBA Gent reengineering
-// Subproject : mxlib - common functions
-// Module     :
-//*****************************************************************************
-//
-// $Rev$
-// $Date$
-// $Author$
-//
-// Comments:
-//*****************************************************************************
-// Revision History
-//*****************************************************************************
 /*
- * $Log$
+ * $Id$
  *
- ******************************************************************************
- */
+ * $LastChangedDate$
+ * $Rev$
+ * $Author$
+ *
+ * */
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -136,11 +125,3 @@ char *fmtt(void)
 	strftime (date_time, sizeof(date_time), "%d.%m.%Y %H:%M:%S", localtime (&now));
 	return date_time;
 }
-/*
- * $Id$
- *
- * $LastChangedDate$
- * $Rev$
- * $Author$
- *
- * */
