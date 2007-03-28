@@ -83,7 +83,7 @@ inline int serialFramedSend(FILE *f,ByteArrayRef src) { // PURE-SE
 	for (i=0,len=0; i<pkt.len; i++) {
 		len+=snprintf(msg+len, 1024-len, " %02X", pkt.arr[i]);
 	}
-	logabba(L_MIN,"Writing to bat3:%s",msg);
+	logabba(L_MAX,"Writing to bat3:%s",msg);
 
 
 	//printf("Sending packet: "); fflush(stdout);
