@@ -51,8 +51,9 @@
 #include "Process.h"
 #include "log.h"
 
+// #define AVRDEV "/dev/ttyT3S0"
 #define AVRDEV "/dev/ttyTS0"
-#define LOGLEVEL 5
+#define LOGLEVEL 1
 
 // copyright (c)2006 Technologic Systems
 // Author: Michael Schmidt
@@ -90,7 +91,7 @@ int BAT3requestInitFromReply(ByteArrayRef bRep,ByteArrayRef bReq) {
 	BAT3request *req = (BAT3request *)(bReq.arr);
 	BAT3reply *rep = (BAT3reply *)(bRep.arr);
 
-	logabba(L_MIN, "start BAT3requestInitFromReply");
+	logabba(L_MAX, "start BAT3requestInitFromReply");
 	req->outputs = rep->outputs;
 	req->pwm_lo = rep->pwm_lo;
 	req->pwm_t = rep->pwm_t;
@@ -105,7 +106,7 @@ int BAT3requestInitFromReply(ByteArrayRef bRep,ByteArrayRef bReq) {
 			req->_led = 0;
 		}
 	}
-	logabba(L_MIN, "Stop BAT3requestInitFromReply");
+	logabba(L_MAX, "Stop BAT3requestInitFromReply");
 	return sizeof(BAT3request);
 }
 
@@ -174,7 +175,7 @@ byte BAT3readEEPROM(FILE *f,byte adrs,BAT3reply *pkt) {
 	pkt->ee_addr = -1;
 	AVRsendRequest(f,BYTE_ARRAY_REF_STRUCT(&req),BYTE_ARRAY_REF_STRUCT(pkt),
 			&BAT3EEPROMcallback);
-	// printf("EE RD %02X <- [%02X]\n",pkt.pkt.EEdata,adrs);
+	logabba(L_MIN, "EEPROM read: EE RD %02X <- [%02X]\n",pkt->ee_data,adrs);
 	req.ee_read = 0; // required to return replies to send ADC data
 	AVRsendRequest(f,BYTE_ARRAY_REF_STRUCT(&req),BYTE_ARRAY_REF_STRUCT(&pkt2),
 			&BAT3EEPROMdoneCallback);
@@ -182,7 +183,7 @@ byte BAT3readEEPROM(FILE *f,byte adrs,BAT3reply *pkt) {
 }
 
 /*
-  int BAT3callback(ByteArrayRef bReq,ByteArrayRef bRep)
+int BAT3callback(ByteArrayRef bReq,ByteArrayRef bRep)
 {
 	logabba(L_MIN, "BAT3callback called");
 }
