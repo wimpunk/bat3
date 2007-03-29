@@ -7,7 +7,16 @@
 #
 
 bin_PROGRAMS=bat3
-bat3_SOURCES=bat3.c log.c log.h term.c term.h stream.c stream.h
+bat3_SOURCES= \
+	bat3.c \
+	log.c \
+	log.h \
+	term.c \
+	term.h \
+	stream.c \
+	stream.h \
+	convert.c \
+	convert.h 
 
 #  add " -lm" to the following if bat3 requires the math library
 #bat3_LDADD=-lopts
