@@ -25,4 +25,4 @@
 #
 ##  install the man page
 #man_MANS=bat3.1
-SUBDIRS=src2
+SUBDIRS=src
