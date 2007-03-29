@@ -1,6 +1,13 @@
 #ifndef LOG_H_INCLUDED
 #define LOG_H_INCLUDED
-
+/*
+ * $Id$
+ *
+ * $LastChangedDate$
+ * $Rev$
+ * $Author$
+ *
+ * */
 
 #include <syslog.h>
 
@@ -13,12 +20,10 @@
 //#define LOG_INFO        6       /* informational */
 //#define LOG_DEBUG       7       /* debug-level messages */
 
-
-// nur Start-, Ende-, Fehlermeldungen - was BASIS_LOG
 #define  L_MIN        LOG_ALERT
 #define  L_MINPLUS    LOG_CRIT
 #define  L_STD        LOG_ERR
-// WAS DETAIL_LOG
+
 #define  L_MORE       LOG_WARNING
 #define  L_NOTICE     LOG_NOTICE
 #define  L_INFO       LOG_INFO
@@ -40,11 +45,4 @@ int getloglevel(void);
 char *fmtt(void);
 
 #endif
-/*
- * $Id$
- *
- * $LastChangedDate$
- * $Rev$
- * $Author$
- *
- * */
+

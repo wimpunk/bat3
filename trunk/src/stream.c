@@ -108,7 +108,7 @@ int readStream(int fd,char *msg, int max)
 			strpos+=snprintf(converted+strpos,sizeof(converted)-strpos," %02X", msg[cnt]);
 		}
 
-		logabba(L_MAX,"Received %d bytes (sum=%04X): %s ",pos,calcCrc(msg,pos-1),converted);
+		logabba(L_MIN,"Received %d bytes (crc=%04X): %s ",pos,calcCrc(msg,pos-1),converted);
 
 	}
 
