@@ -18,179 +18,24 @@
 
 #include "log.h"
 #include "stream.h"
+#include "bat3.h"
 #include "convert.h"
 
-#define BAT3DEV "/dev/ttyT3S0"
+// this one should be removed.
+#include "tsbat3.h"
 
-typedef enum {
-	ON,
-	OFF
-} onoff_t;
+#define BAT3DEV "/dev/ttyTS0"
+#define DEFAULT_LOGLEVEL L_STD
 
-struct bat3 {
-
-	unsigned short adc0; // input supply voltage
-	unsigned short adc2; // regulated supply voltage
-	unsigned short adc6; // battery voltage
-	unsigned short adc7; // battery current
-	unsigned short pwm_lo; // high time
-	unsigned short pwm_t; // high time plus low time
-	unsigned short temp; // temperature in TMP124 format
-	unsigned char ee_addr;
-	unsigned char ee_data;
-
-	onoff_t PWM1en;
-	onoff_t PWM2en;
-	onoff_t offsetEn;
-	onoff_t opampEn;
-	onoff_t buckEn;
-	onoff_t led;
-	onoff_t jp3;
-	onoff_t batRun;
-	onoff_t ee_read;
-	onoff_t ee_write;
-	onoff_t ee_ready;
-	onoff_t softJP3;
-
-};
-
-struct BAT3request {
-	unsigned alarm;
-	union {
-		struct {
-			unsigned short PWM1en:1,
-				       PWM2en:1,
-				       _offsetEn:1,
-				       opampEn:1,
-				       _buckEn:1,
-				       _led:1,
-				       _jp3:1,
-				       batRun:1,
-				       ee_read:1,
-				       ee_write:1,
-				       ee_ready:1,
-				       softJP3:1;
-		} __attribute__((packed));
-		unsigned short outputs;
-	} __attribute__((packed));
-	unsigned short pwm_lo; // low time
-	unsigned short pwm_t; // high time plus low time
-	unsigned char ee_addr;
-	unsigned char ee_data;
-	unsigned char checksum;
-
-} __attribute__((packed));
-
-struct BAT3reply {
-	unsigned short adc0; // input supply voltage
-	unsigned short adc2; // regulated supply voltage
-	unsigned short adc6; // battery voltage
-	unsigned short adc7; // battery current
-	unsigned short pwm_lo; // high time
-	unsigned short pwm_t; // high time plus low time
-	unsigned short temp; // temperature in TMP124 format
-	union {
-		struct {
-			unsigned short PWM1en:1,
-				       PWM2en:1,
-				       _offsetEn:1,
-				       opampEn:1,
-				       _buckEn:1,
-				       _led:1,
-				       _jp3:1,
-				       batRun:1,
-				       ee_read:1,
-				       ee_write:1,
-				       ee_ready:1,
-				       softJP3:1;
-		} __attribute__((packed));
-		unsigned short outputs;
-	} __attribute__((packed));
-	unsigned char ee_addr;
-	unsigned char ee_data;
-	unsigned char checksum;
-} __attribute__((packed));
-
-
-
-
-void decodemsg(char *msg, int size) 
+char *print_onoff(onoff_t onoff)
 {
-	unsigned short adc0; // input supply voltage
-	unsigned short adc2; // regulated supply voltage
-	unsigned short adc6; // battery voltage
-	unsigned short adc7; // battery current
-	unsigned short pwm_lo; // high time
-	unsigned short pwm_t; // high time plus low time
-	unsigned short temp; // temperature in TMP124 format
-	/* PWM1en:1,PWM2en:1,_offsetEn:1,opampEn:1,_buckEn:1,_led:1,_jp3:1,batRun:1,ee_read:1,ee_write:1,ee_ready:1,softJP3:1;	 */
-	unsigned short outputs;
-	unsigned char ee_addr;
-	unsigned char ee_data;
-	unsigned char checksum;
-	struct BAT3reply *reply;
-
-	int pos=0;
-
-	// for (pos=0; pos<size-1; pos++) mycheck=(mycheck - msg[pos])&0xFF;
-	// pos=0;
-
-	if (size!=19) {
-		printf("Decode msg: volgens mij heeft ie verkeerde lengte\n");
+	if (onoff == ON) {
+	return "ON";
+	} else {
+	return "OFF";
 	}
-
-	adc0    = msg[pos+0] + msg[pos+1]*0x100; pos+=2;
-	adc2    = msg[pos+0] + msg[pos+1]*0x100; pos+=2;
-	adc6    = msg[pos+0] + msg[pos+1]*0x100; pos+=2;
-	adc7    = msg[pos+0] + msg[pos+1]*0x100; pos+=2;
-	pwm_lo  = msg[pos+0] + msg[pos+1]*0x100; pos+=2;
-	pwm_t   = msg[pos+0] + msg[pos+1]*0x100; pos+=2;
-	temp    = msg[pos+0] + msg[pos+1]*0x100; pos+=2;
-	outputs = msg[pos+0] + msg[pos+1]*0x100; pos+=2;
-	ee_addr = msg[pos++];
-	ee_data = msg[pos++];
-	checksum = msg[pos++];
-
-	printf("Converted:\n");
-	printf("adc = %04X - input supply voltage     %2.2fV\n", adc0, battV(adc0));
-	printf("adc = %04X - regulated supply voltage %2.2fV\n", adc2, battV(adc2));
-	printf("adc = %04X - battery voltage          %2.2fV\n", adc6, battV(adc6));
-	printf("adc = %04X - battery current          %2.2fmA\n", adc7, battI(adc7)/1000.0);
-	printf("pwm = %04X - high time                %dmA\n", pwm_lo, pwm_lo);
-	printf("pwm = %04X - pulse time               %dmA\n", pwm_t, pwm_t);
-	printf("temp= %04X - temperature in TMP124    %2.2fC\n", temp, tempC(temp));
-	printf("out = %02X - outputs                  %d\n", outputs, outputs);
-	printf("add = %02X - address                  %d\n", ee_addr, ee_addr);
-	printf("dat = %02X - data                     %d\n", ee_data, ee_data);
-	printf("sum = %02X - checksum           \n", checksum);
-
-	printf("based on bat3:\n");
-	reply = (struct BAT3reply*) msg;
-	printf("adc = %04X - input supply voltage     %2.2fV\n", reply->adc0, battV(reply->adc0));
-	printf("adc = %04X - regulated supply voltage %2.2fV\n", reply->adc2, battV(reply->adc2));
-	printf("adc = %04X - battery voltage          %2.2fV\n", reply->adc6, battV(reply->adc6));
-	printf("adc = %04X - battery current          %2.2fmA\n", reply->adc7, battI(reply->adc7)/1000.0);
-	printf("pwm = %04X - high time                %dmA\n", reply->pwm_lo, reply->pwm_lo);
-	printf("pwm = %04X - pulse time               %dmA\n", reply->pwm_t, reply->pwm_t);
-	printf("temp= %04X - temperature in TMP124    %2.2fC\n", reply->temp, tempC(reply->temp));
-	printf("out = %02X - outputs                  %d\n", reply->outputs, reply->outputs);
-	printf("             PWM1en:    %s\n", reply->PWM1en?"ON":"OFF");
-	printf("             PWM2en:    %s\n", reply->PWM2en?"ON":"OFF");
-	printf("             _offsetEn: %s\n", reply->_offsetEn?"ON":"OFF");
-	printf("             _buckEn:   %s\n", reply->_buckEn?"ON":"OFF");
-	printf("             _led:      %s\n", reply->_led?"ON":"OFF");
-	printf("             _jp3:      %s\n", reply->_jp3?"ON":"OFF");
-	printf("             batRun:    %s\n", reply->batRun?"ON":"OFF");
-	printf("             ee_read:   %s\n", reply->ee_read?"ON":"OFF");
-	printf("             ee_write:  %s\n", reply->ee_write?"ON":"OFF");
-	printf("             ee_ready:  %s\n", reply->ee_ready?"ON":"OFF");
-	printf("             softJP3:  %s\n", reply->softJP3?"ON":"OFF");
-	/* PWM2en:1 _offsetEn:1 opampEn:1 _buckEn:1, _led:1 _jp3:1 batRun:1 ee_read:1 ee_write:1 ee_ready:1 softJP3:1; */
-	printf("add = %02X - address                  %d\n", reply->ee_addr, reply->ee_addr);
-	printf("dat = %02X - date                     %d\n", reply->ee_data, reply->ee_data);
-	
+	return NULL;
 }
-
 void writemsg(int fd, char* msg, int len, int read)
 {
 	/*
@@ -324,14 +169,19 @@ int main(int argc, char *argv[])
 	int errcnt=0;
 	char msg[56];
 	int cnt;
+	int loglevel = -1;
+	struct bat3 state;
 
 	strncpy(device, BAT3DEV, sizeof(BAT3DEV));
 
-	while ((c=getopt(argc, argv, "d:h?"))!=EOF) {
+	while ((c=getopt(argc, argv, "d:h?l:"))!=EOF) {
 		switch (c) {
 			case 'd': //device
 				strncpy(device,optarg, sizeof(device)-1);
 				printf("I'll read device %s\n",device);
+				break;
+			case 'l': //loglevel
+				loglevel = atoi(optarg);
 				break;
 			case '?':
 			case 'h': 
@@ -350,24 +200,24 @@ int main(int argc, char *argv[])
 		fprintf(stderr,"Error opening %s: %m\n",device);
 		return(1);
 	}
-
-	setloglevel(L_MAX,"bat3");
-	logabba(L_MIN,"bat3 is started");
-
 	termConfigRaw(fd);
+
+	if ((loglevel<L_MIN) || (loglevel>L_MAX)) loglevel = L_STD;
+	setloglevel(L_MAX,"bat3");
+	logabba(L_MIN,"bat3 is started, loglevel %i", loglevel);
 	
 	cnt = readStream(fd,msg,sizeof(msg));
-	decodemsg(msg,cnt);
+	decodemsg(msg,cnt,&state);
 	
 //	flush(fd); // maybe this helps?
 	
 	writemsg(fd, msg, cnt,  1);
-	cnt = readStream(fd,msg,sizeof(msg));
-	decodemsg(msg,cnt);
+	cnt   = readStream(fd,msg,sizeof(msg));
+	decodemsg(msg,cnt,&state);
 	
 	writemsg(fd, msg, cnt, 0);
 	cnt = readStream(fd,msg,sizeof(msg));
-	decodemsg(msg,cnt);
+	decodemsg(msg,cnt,&state);
 	
 	close(fd);
 
