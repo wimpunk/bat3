@@ -24,7 +24,14 @@ typedef enum {
 	STATE_ENDED
 } state_t;
 
+static unsigned char calcCrc(char *msg, int len) {
 
+	int crc=0xFF,pos;
+	for (pos=0; pos<len; pos++) crc = (crc - msg[pos]) & 0xFF;
+
+	return crc;
+
+}
 
 /* writeStream: writes msg to fd with addition of STX, CRC and ETX */
 int writeStream(int fd, char *msg, int len)

@@ -18,6 +18,7 @@
 
 #include "log.h"
 #include "stream.h"
+#include "convert.h"
 
 #define BAT3DEV "/dev/ttyT3S0"
 
@@ -110,47 +111,8 @@ struct BAT3reply {
 	unsigned char checksum;
 } __attribute__((packed));
 
-unsigned char calcCrc(char *msg, int len) {
-
-	int crc=0xFF,pos;
-	for (pos=0; pos<len; pos++) crc = (crc - msg[pos]) & 0xFF;
-	// printf("**crc=%04X",crc);
-	return crc;
-
-}
 
 
-float battV(unsigned short ticks) 
-{
-
-	float f;
-
-	f = (float)(ticks) / 12160.0;
-
-	return f;
-}
-
-int battI(unsigned short ticks) // return uA
-{ 
-
-	return (ticks-29000) * 60;
-
-}
-
-static float tempC(short int tmp) 
-{
-
-	short int tmpd;
-	float f;
-
-	tmpd = tmp & 0x7F;
-	tmp >>= 7;
-	f = (float)tmp + (float)tmpd / 128;
-	// f = 9.0/5.0 * f + 32;
-	//printf("TempF:%f\n",f);
-	//  f = ((float)((int)(f * 10))) / 10;
-	return f;
-}
 
 void decodemsg(char *msg, int size) 
 {
@@ -199,8 +161,8 @@ void decodemsg(char *msg, int size)
 	printf("temp= %04X - temperature in TMP124    %2.2fC\n", temp, tempC(temp));
 	printf("out = %02X - outputs                  %d\n", outputs, outputs);
 	printf("add = %02X - address                  %d\n", ee_addr, ee_addr);
-	printf("dat = %02X - date                     %d\n", ee_data, ee_data);
-	printf("sum = %02X - checksum           mine: %04X\n", checksum, calcCrc(msg,size-1));
+	printf("dat = %02X - data                     %d\n", ee_data, ee_data);
+	printf("sum = %02X - checksum           \n", checksum);
 
 	printf("based on bat3:\n");
 	reply = (struct BAT3reply*) msg;
