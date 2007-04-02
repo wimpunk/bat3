@@ -12,3 +12,4 @@ float battV(unsigned short ticks) ;
 int battI(unsigned short ticks); // return uA
 float tempC(short int tmp);
 int decodemsg(char *msg, int size, struct bat3* mybat3);
+int encodemsg(char *msg, int size, struct bat3* mybat3);
