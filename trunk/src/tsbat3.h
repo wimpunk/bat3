@@ -30,7 +30,7 @@
 	unsigned short pwm_t; // high time plus low time
 	unsigned char ee_addr;
 	unsigned char ee_data;
-	unsigned char checksum;
+	// unsigned char checksum;
 
 } __attribute__((packed));
 
@@ -61,6 +61,6 @@ struct BAT3reply {
 	} __attribute__((packed));
 	unsigned char ee_addr;
 	unsigned char ee_data;
-	unsigned char checksum;
+	// unsigned char checksum;
 } __attribute__((packed));
 

@@ -92,7 +92,8 @@ unsigned char checksum;
 
 	// cnt=write(fd, (char*)&req, sizeof(req));
 	// logabba(L_MAX, "Write returned %d while sizeof(req)=%d, checksum is %04X", cnt,sizeof(req),req.checksum);
-		writeStream(fd, (char*)&req, sizeof(req)-1);	
+	
+	writeStream(fd, (char*)&req, sizeof(req)-1);	
 	// req.ee_read = 0;
 	
 /*
