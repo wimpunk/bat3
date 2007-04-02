@@ -12,6 +12,25 @@
 
 #include "stdio.h" 
  
+float adcV(unsigned short ticks)
+{
+/* According to http://tech.groups.yahoo.com/group/ts-7000/message/5402
+These inputs are coming directly from an ADC. To get the ADC
+ output the
+ supply voltage is multiplied by ~0.07, then divided by 3.3V, then
+ multiplied
+ by 65536. This corresponds to approximately 700mV per unit, so 39812 *
+ 700mV is around 28V. The regulated value is approximately 190mV per
+ unit,
+ so 26623 * 190mV is right around 5V. The values are only
+ approximate due to
+ part tolerances and lack of ADC calibration.
+ */
+ 
+ // return (ticks * 0.07 / 3.3 * 65536);
+ return (ticks * 0.700);
+}
+ 
 float battV(unsigned short ticks) 
 {
 
@@ -39,9 +58,11 @@ float tempC(short int tmp)
 	tmpd = tmp & 0x7F;
 	tmp >>= 7;
 	f = (float)tmp + (float)tmpd / 128;
+	
 	// f = 9.0/5.0 * f + 32;
 	//printf("TempF:%f\n",f);
 	//  f = ((float)((int)(f * 10))) / 10;
+	
 	return f;
 	
 }
@@ -74,10 +95,11 @@ static void print_BAT3reply(struct BAT3reply* reply)
 
 static void print_bat3(struct bat3* mybat3)
 {
-	printf("input supply voltage     = %04X\n", mybat3->inp_u); // 
-	printf("regulated supply voltage = %04X\n", mybat3->reg_u); // 
-	printf("battery voltage          = %04X\n", mybat3->bat_u); // 
-	printf("battery current          = %04X\n", mybat3->bat_i); // 
+
+	printf("input supply voltage     = %04X (%3.2fV)\n",  mybat3->inp_u, 0.70/1000 * (mybat3->inp_u)); // 
+	printf("regulated supply voltage = %04X (%3.2fV)\n",  mybat3->reg_u, 0.19/1000 * (mybat3->reg_u)); // 
+	printf("battery voltage          = %04X (%3.2fV)\n",  mybat3->bat_u, battV(mybat3->bat_u)); // 
+	printf("battery current          = %04X (%3.2fmA)\n", mybat3->bat_i, battI(mybat3->bat_i)/1000.0); // 
 	printf("high time                = %04X\n", mybat3->pwm_lo); // 
 	printf("high & low time          = %04X\n", mybat3->pwm_t); // 
 	printf("temperature              = %04X\n", mybat3->temp); //  in TMP124 format
@@ -104,15 +126,15 @@ int decodemsg(char *msg, int size, struct bat3* mybat3)
 {
 	struct BAT3reply *reply;
 
-	if (size!=sizeof(struct BAT3reply) {
-		logabba(L_INFO,"Decode msg: wrong message size: %d",size);
+	if (size!=sizeof(struct BAT3reply)) {
+		logabba(L_INFO,"Decode msg: wrong message size: %d != %d", size, sizeof(struct BAT3reply));
 		return 1;
 	}
 
 	reply = (struct BAT3reply*) msg;
-	// print_BAT3reply(reply);
-	
-	logabba(L_MIN,"Decoding got crc = %02X", reply->checksum);
+
+	print_BAT3reply(reply);
+	// logabba(L_MIN,"Decoding got crc = %02X", reply->checksum);
 	
 	mybat3->inp_u    = reply->adc0 ; // input supply voltage
 	mybat3->reg_u    = reply->adc2 ; // regulated supply voltage
@@ -150,8 +172,8 @@ int encodemsg(char *msg, int size, struct bat3* mybat3)
 
 	struct BAT3request *req = (struct BAT3request *) msg;
 	
-	if (size<sizeof(struct BAT3request) {
-		logabba(L_INFO,"Decode msg: wrong message size: %d",size);
+	if (size<sizeof(struct BAT3request)) {
+		logabba(L_INFO,"Encode msg: wrong message size: %d",size);
 		return 1;
 	}
 	
@@ -177,6 +199,8 @@ int encodemsg(char *msg, int size, struct bat3* mybat3)
 	req->ee_addr   = mybat3->ee_addr;
 	req->ee_data   = mybat3->ee_data;
 	
-	return (sizeof(struct bat3));
+	logabba(L_MAX, "Encodemsg: req->_led = %i, mybat3->led = %s",req->_led, mybat3->led==ON?"ON":"OFF");
+	
+	return (sizeof(struct BAT3request));
 	
 }
