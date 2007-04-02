@@ -104,7 +104,7 @@ int decodemsg(char *msg, int size, struct bat3* mybat3)
 {
 	struct BAT3reply *reply;
 
-	if (size!=19) {
+	if (size!=sizeof(struct BAT3reply) {
 		logabba(L_INFO,"Decode msg: wrong message size: %d",size);
 		return 1;
 	}
@@ -148,8 +148,35 @@ int decodemsg(char *msg, int size, struct bat3* mybat3)
 int encodemsg(char *msg, int size, struct bat3* mybat3) 
 {
 
-	struct BAT3request req;
+	struct BAT3request *req = (struct BAT3request *) msg;
 	
+	if (size<sizeof(struct BAT3request) {
+		logabba(L_INFO,"Decode msg: wrong message size: %d",size);
+		return 1;
+	}
 	
+	req->alarm=0; // Wondering what this is for
+	
+	req->PWM1en    = mybat3->PWM1en;
+	req->PWM2en    = mybat3->PWM2en;
+	req->_offsetEn = mybat3->offsetEn==OFF;
+	req->opampEn   = mybat3->opampEn==ON;
+	req->_buckEn   = mybat3->buckEn==OFF;
+	req->_led      = mybat3->led==OFF;
+	req->_jp3      = mybat3->jp3==OFF;
+	
+	req->batRun    = mybat3->batRun==ON;
+	req->ee_read   = mybat3->ee_read==ON;
+	req->ee_write  = mybat3->ee_write==ON;
+	req->ee_ready  = mybat3->ee_ready==ON;
+	
+	req->softJP3   = mybat3->softJP3==ON;
+
+	req->pwm_lo    = mybat3->pwm_lo;
+	req->pwm_t     = mybat3->pwm_t;
+	req->ee_addr   = mybat3->ee_addr;
+	req->ee_data   = mybat3->ee_data;
+	
+	return (sizeof(struct bat3));
 	
 }
