@@ -11,8 +11,6 @@
  
 #include "log.h"
 
-
-
 #define ESC 0x7D
 #define STX 0x7E
 #define ETX 0x7F
@@ -33,23 +31,30 @@ static unsigned char calcCrc(char *msg, int len) {
 
 }
 
-/* writeStream: writes msg to fd with addition of STX, CRC and ETX */
+/* writeStream: writes msg to fd with addition of STX, CRC and ETX
+adds ESC when needed*/
 int writeStream(int fd, char *msg, int len)
 {
 
 	char mymsg[50];
 	int pos=0,cnt;
+	char b;
 	
 	mymsg[pos++]=STX;
 	for (cnt=0; cnt<len; cnt++) {
-	// Need to escape?!
+	b = msg[cnt];
+	
+	if (b == 0x7E || b == 0x7D || b == 0x7F || b == 0x11 || b == 0x13) {
+		mymsg[pos++] = ESC;
+		mymsg[pos++] = b ^ (1<<5);
+	} else {
 		mymsg[pos++] = msg[cnt];
+	}
 	}
 	mymsg[pos++] = calcCrc(msg, len);
 	mymsg[pos++] = ETX;
-	
 		
-	cnt=write(fd, mymsg, pos);
+	cnt = write(fd, mymsg, pos);
 	logabba(L_MAX, "Write returned %d while len=%d, checksum is %04X", cnt, len, calcCrc(msg, len));
 	
 	return cnt;
@@ -112,6 +117,6 @@ int readStream(int fd,char *msg, int max)
 
 	}
 
-	return pos;
+	return pos-1; // don't send the checksum, we checked it before
 
 }

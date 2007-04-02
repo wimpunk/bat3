@@ -48,6 +48,11 @@ int battI(unsigned short ticks) // return uA
 
 }
 
+unsigned short Ibatt(int current)
+{
+	return (current/60)+29000;
+}
+
 // Converts TEMP124 signal to Celsius
 float tempC(short int tmp) 
 {
@@ -100,7 +105,7 @@ static void print_bat3(struct bat3* mybat3)
 	printf("regulated supply voltage = %04X (%3.2fV)\n",  mybat3->reg_u, 0.19/1000 * (mybat3->reg_u)); // 
 	printf("battery voltage          = %04X (%3.2fV)\n",  mybat3->bat_u, battV(mybat3->bat_u)); // 
 	printf("battery current          = %04X (%3.2fmA)\n", mybat3->bat_i, battI(mybat3->bat_i)/1000.0); // 
-	printf("high time                = %04X\n", mybat3->pwm_lo); // 
+	printf("low time                 = %04X\n", mybat3->pwm_lo); // 
 	printf("high & low time          = %04X\n", mybat3->pwm_t); // 
 	printf("temperature              = %04X\n", mybat3->temp); //  in TMP124 format
 	printf("EEPROM address           = %04X\n", mybat3->ee_addr);
@@ -133,7 +138,7 @@ int decodemsg(char *msg, int size, struct bat3* mybat3)
 
 	reply = (struct BAT3reply*) msg;
 
-	print_BAT3reply(reply);
+	// print_BAT3reply(reply);
 	// logabba(L_MIN,"Decoding got crc = %02X", reply->checksum);
 	
 	mybat3->inp_u    = reply->adc0 ; // input supply voltage
@@ -179,8 +184,8 @@ int encodemsg(char *msg, int size, struct bat3* mybat3)
 	
 	req->alarm=0; // Wondering what this is for
 	
-	req->PWM1en    = mybat3->PWM1en;
-	req->PWM2en    = mybat3->PWM2en;
+	req->PWM1en    = mybat3->PWM1en==ON;
+	req->PWM2en    = mybat3->PWM2en==ON;
 	req->_offsetEn = mybat3->offsetEn==OFF;
 	req->opampEn   = mybat3->opampEn==ON;
 	req->_buckEn   = mybat3->buckEn==OFF;

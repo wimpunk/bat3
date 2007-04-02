@@ -8,5 +8,4 @@
  * */
 
 void changeled(struct bat3* state);
-void doload(struct bat3* state);
- 
+void doload(struct bat3* state, int target); 
