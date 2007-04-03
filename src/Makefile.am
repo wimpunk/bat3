@@ -25,6 +25,8 @@ bat3_SOURCES= \
 
 #  add " -lm" to the following if bat3 requires the math library
 #bat3_LDADD=-lopts
+bat3_LDADD=-L../../root/lib -lkk -L/home/abba/icu2.1/ptxbuild/root/lib/
+bat3_CFLAGS=-I/home/abba/src/include/
 
 EXTRA_DIST=bat3.lsm.in 
 

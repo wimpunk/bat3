@@ -135,29 +135,31 @@ int main(int argc, char *argv[])
 	if ((loglevel<L_MIN) || (loglevel>L_MAX)) loglevel = DEFAULT_LOGLEVEL;
 	setloglevel(loglevel, "bat3");
 	logabba(L_MIN, "%s started, loglevel %i", argv[0], loglevel);
-
 	
+	if (getsample)
 	cnt = readStream(fd, msg, sizeof(msg));
-	decodemsg(msg, cnt, &state);
+	if (decodemsg(msg, cnt, &state))
 	
 	// quick hack for not overloading
 	// state.pwm_lo = 500;
 
-for (c=0; c<30; c++)	{
-	if (c) flush(fd);
+	cnt=0;
 	
+while (cnt<300)	{  // 300 samples
+
+	// if (c) flush(fd);
+	
+	getsample(fd,&state);
 	changeled(&state);
 	doload(&state,400); // 400mA charging :-)
 
-	cnt =  encodemsg(msg, sizeof(msg), &state);
-	writeStream(fd, msg, cnt);
+	if (cnt =  encodemsg(msg, sizeof(msg), &state))	writeStream(fd, msg, cnt);
 	
-	
-	
-	cnt = readStream(fd,msg,sizeof(msg));
-	decodemsg(msg,cnt,&state);
+//	cnt = readStream(fd,msg,sizeof(msg));
+//	decodemsg(msg,cnt,&state);
 
-	usleep(250*1000);
+	cnt++;
+	// usleep(250*1000);
 }
 	close(fd);
 
