@@ -132,8 +132,9 @@ int decodemsg(char *msg, int size, struct bat3* mybat3)
 	struct BAT3reply *reply;
 
 	if (size!=sizeof(struct BAT3reply)) {
-		logabba(L_INFO,"Decode msg: wrong message size: %d != %d", size, sizeof(struct BAT3reply));
-		return 1;
+		logabba(L_MIN,"Decode msg: wrong message size: %d != %d", size, sizeof(struct BAT3reply));
+		// TODO: check if this is still needed
+		// return 1;
 	}
 
 	reply = (struct BAT3reply*) msg;

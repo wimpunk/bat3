@@ -27,12 +27,14 @@
 
 #define BAT3DEV "/dev/ttyTS0"
 #define DEFAULT_LOGLEVEL L_STD
+#define DEFAULT_SAMPLES  10
+#define MAX_RETRIES 5
 
 char *print_onoff(onoff_t onoff) {
     if (onoff == ON) {
-        return "ON";
+	return "ON";
     } else {
-        return "OFF";
+	return "OFF";
     }
     return NULL;
 }
@@ -74,22 +76,38 @@ static int getsample(int fd, struct bat3 *sample) {
     struct bat3 temp;
     int cnt;
     char msg[56];
+    int error=0;
+    int retry=1;
     
-    if (!(cnt=readStream(fd, msg, sizeof(msg)))) {
-        logabba(L_MIN, "Could not get a sample");
-        return 0;
-    } else {
-        if (!decodemsg(msg, cnt, &temp)) {
-            logabba(L_MIN, "Could not decode message");
-            return 0;
-        }
-        
-        *sample = temp;
-        return 1;
+    
+    while (error<MAX_RETRIES && retry) {
+	
+	if (!(cnt=readStream(fd, msg, sizeof(msg)))) {
+	    logabba(L_MIN, "Could not readStream, error=%d", error);
+	    error++;
+	    continue;
+	}
+	
+	if (decodemsg(msg, cnt, &temp)!=0) {
+	    logabba(L_MIN, "Could not decodemsg, error=%d", error);
+	    error++;
+	    continue;
+	}
+	
+	retry=0;
+	
     }
     
+    if (!retry) {
+	logabba(L_MIN, "Good sample after error=%d tries ", error);
+	*sample = temp;
+	return 1;
+    }
+    
+    logabba(L_MIN, "Could not get a sample after error=%d tries ", error);     ;
+    return 0;
+    
 }
-
 
 static void usage(char *progname) {
     // TODO: shit opkuisen
@@ -99,6 +117,7 @@ static void usage(char *progname) {
     printf("   %s [-d device][-l loglevel]\n", progname);
     printf("      -d device: device to use, default %s\n", BAT3DEV );
     printf("      -l loglevel: loglevel to use, default %i\n", DEFAULT_LOGLEVEL );
+    printf("      -s samples: maxsamples to use, default %i\n", DEFAULT_SAMPLES );
     printf("\n");
 }
 
@@ -114,68 +133,89 @@ int main(int argc, char *argv[]) {
     char device[50]=""; // device to use
     int errcnt=0;
     char msg[56];
-    int cnt;
-    int loglevel = L_STD;
+    int cnt, cntsamples;
+    int loglevel = DEFAULT_LOGLEVEL;
+    int samples = DEFAULT_SAMPLES;
     struct bat3 state;
     
     strncpy(device, BAT3DEV, sizeof(BAT3DEV));
     
-    while ((c=getopt(argc, argv, "d:h?l:"))!=EOF) {
-        switch (c) {
-            case 'd': //device
-                strncpy(device, optarg, sizeof(device)-1);
-                printf("I'll read device %s\n", device);
-                break;
-            case 'l': //loglevel
-                loglevel = atoi(optarg);
-                break;
-            case '?':
-            case 'h':
-            default: errcnt++;
-            break;
-        }
-        if (errcnt) break;
+    while ((c=getopt(argc, argv, "d:h?l:s:"))!=EOF) {
+	switch (c) {
+	    case 'd': //device
+		strncpy(device, optarg, sizeof(device)-1);
+		printf("I'll read device %s\n", device);
+		break;
+	    case 'l': //loglevel
+		loglevel = atoi(optarg);
+		break;
+	    case 's': //loglevel
+		samples = atoi(optarg);
+		break;
+		
+	    case '?':
+	    case 'h':
+	    default: errcnt++;
+	    break;
+	}
+	if (errcnt) break;
     }
     
     if (errcnt) {
-        usage(argv[0]);
-        return;
+	usage(argv[0]);
+	return;
     }
     
     if ((fd = open(device, O_NONBLOCK|O_RDWR))==-1) {
-        fprintf(stderr, "Error opening %s: %m\n", device);
-        return(1);
+	// if ((fd = open(device, O_RDWR))==-1) {
+	fprintf(stderr, "Error opening %s: %m\n", device);
+	return(1);
     }
     
     termConfigRaw(fd);
     
+    if ((samples<0)) samples = DEFAULT_SAMPLES;
+    
     if ((loglevel<L_MIN) || (loglevel>L_MAX)) loglevel = DEFAULT_LOGLEVEL;
     setloglevel(loglevel, "bat3");
-    logabba(L_MIN, "%s started, loglevel %i", argv[0], loglevel);
     
-    
+    logabba(L_MIN, "%s started, loglevel %i, getting %d samples", argv[0], loglevel, samples);
     
     // quick hack for not overloading
     // state.pwm_lo = 500;
     
-    cnt=0;
-    
-    // while (cnt<300)	{  // 300 samples
+    cntsamples=0;
     
     if (!getsample(fd, &state)) {
-        logabba(L_MIN, "Did not get a sample");
-//        break;
+	logabba(L_MIN, "Did not get a sample");
+	return 0;
     }
-    // if (c) flush(fd);
     
-    changeled(&state);
-    doload(&state, 400); // 400mA charging :-)
+    while (cntsamples<samples)	{  // 300 samples
+	
+	changeled(&state);
+	doload(&state, 400); // 400mA charging :-)
+	
+	if (cnt = encodemsg(msg, sizeof(msg), &state)) writeStream(fd, msg, cnt);
+	
+	cntsamples++;
+	
+	// usleep(250*1000);
+	usleep(100*1000);
+	
+	flush(fd);
+	
+	cnt=0;
+	while (!getsample(fd, &state) && cnt<MAX_RETRIES) {
+	    cnt++;
+	}
+	if (cnt>=MAX_RETRIES) {
+	    logabba(L_MIN, "Did not get a sample even after retrying %d times", cnt);
+	    break;
+	}
+	
+    }
     
-    if (cnt = encodemsg(msg, sizeof(msg), &state))	writeStream(fd, msg, cnt);
-    
-    cnt++;
-    // usleep(250*1000);
-    // }
     close(fd);
     
     return 0;
