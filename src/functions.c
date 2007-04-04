@@ -10,6 +10,7 @@
 
 #include "bat3.h"
 #include "log.h"
+#include "convert.h"
 
 void changeled(struct bat3* state) {
     if (state->led == ON) {
@@ -44,7 +45,6 @@ void doload(struct bat3* state, int target) {
 	
 	int diff;
 	int newpwm;
-	int mod;
 	
 	logabba(L_NOTICE, "Doload: target=%imA, current=%imA" , target, battI(state->bat_i)/1000);
 	

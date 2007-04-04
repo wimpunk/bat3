@@ -119,9 +119,11 @@ static void print_bat3(struct bat3* mybat3)
 	printf("led      = %s\n",print_onoff(mybat3->led));
 	printf("jp3      = %s\n",print_onoff(mybat3->jp3));
 	printf("batRun   = %s\n",print_onoff(mybat3->batRun));
+	
 	printf("ee_read  = %s\n",print_onoff(mybat3->ee_read));
 	printf("ee_write = %s\n",print_onoff(mybat3->ee_write));
 	printf("ee_ready = %s\n",print_onoff(mybat3->ee_ready));
+	
 	printf("softJP3  = %s\n",print_onoff(mybat3->softJP3));
 
 }
@@ -139,7 +141,7 @@ int decodemsg(char *msg, int size, struct bat3* mybat3)
 
 	reply = (struct BAT3reply*) msg;
 
-	// print_BAT3reply(reply);
+	print_BAT3reply(reply);
 	// logabba(L_MIN,"Decoding got crc = %02X", reply->checksum);
 	
 	mybat3->inp_u    = reply->adc0 ; // input supply voltage
@@ -194,6 +196,7 @@ int encodemsg(char *msg, int size, struct bat3* mybat3)
 	req->_jp3      = mybat3->jp3==OFF;
 	
 	req->batRun    = mybat3->batRun==ON;
+	
 	req->ee_read   = mybat3->ee_read==ON;
 	req->ee_write  = mybat3->ee_write==ON;
 	req->ee_ready  = mybat3->ee_ready==ON;
