@@ -30,6 +30,8 @@
 #define DEFAULT_LOGLEVEL L_STD
 #define DEFAULT_SAMPLES  10
 #define DEFAULT_CURRENT  400
+#define DEFAULT_ADDRESS  0x80
+#define DEFAULT_VALUE    0xFF
 #define MAX_RETRIES 5
 
 char *print_onoff(onoff_t onoff) {
@@ -116,11 +118,14 @@ static void usage(char *progname) {
     printf("\n");
     printf("Usage\n");
     printf("\n");
-    printf("   %s [-c current][-d device][-l loglevel][-s samples]\n", progname);
+    printf("   %s [-c current][-d device][-l loglevel][-r][-s samples][-w value]\n", progname);
+    printf("      -a address: address to use while reading/writing, default %i\n", DEFAULT_ADDRESS);
     printf("      -c current: current to load (mA), default %i\n", DEFAULT_CURRENT);
     printf("      -d device: device to use, default %s\n", BAT3DEV );
     printf("      -l loglevel: loglevel to use, default %i\n", DEFAULT_LOGLEVEL );
+    printf("      -r : read from [address]");
     printf("      -s samples: maxsamples to use, default %i\n", DEFAULT_SAMPLES );
+    printf("      -w value: write value to [address], default %i\n", DEFAULT_VALUE);
     printf("\n");
 }
 
@@ -142,13 +147,19 @@ int main(int argc, char *argv[]) {
     int loglevel = DEFAULT_LOGLEVEL;
     int samples  = DEFAULT_SAMPLES;
     int current  = DEFAULT_CURRENT;
+    int address  = DEFAULT_ADDRESS;
+    int read  = 0;
+    int write = 0;
     
     struct bat3 state;
     
     strncpy(device, BAT3DEV, sizeof(BAT3DEV));
     
-    while ((c=getopt(argc, argv, "c:d:h?l:s:"))!=EOF) {
+    while ((c=getopt(argc, argv, "a:c:d:h?l:rs:"))!=EOF) {
 	switch (c) {
+	    case 'a': //address
+		address=atoi(optarg);
+		break;
 	    case 'c': //current
 		current = atoi(optarg);
 		break;
@@ -159,10 +170,14 @@ int main(int argc, char *argv[]) {
 	    case 'l': //loglevel
 		loglevel = atoi(optarg);
 		break;
+	    case 'r': //read
+		read=1;
+		break;
 	    case 's': //loglevel
 		samples = atoi(optarg);
 		break;
-	  
+		
+		
 		
 	    case '?':
 	    case 'h':
@@ -176,13 +191,13 @@ int main(int argc, char *argv[]) {
 	usage(argv[0]);
 	return(1);
     }
-   
+    
     
     if ((fd = openStream(device)) == -1) {
-	logabba(L_MIN, "Could not open device %s",device);
+	logabba(L_MIN, "Could not open device %s", device);
 	return 0;
     }
-	
+    
     
     if ((samples<0)) samples = DEFAULT_SAMPLES;
     if ((current<0) || (current>1000)) current = DEFAULT_CURRENT;
@@ -192,26 +207,21 @@ int main(int argc, char *argv[]) {
     
     logabba(L_MIN, "%s started, loglevel %i, getting %d samples, using %imA to load", argv[0], loglevel, samples, current);
     
-    cntsamples=0;
-    
     if (!getsample(fd, &state)) {
 	logabba(L_MIN, "Did not get a sample");
 	return 0;
     }
     
+    cntsamples=0;
     while (cntsamples<samples)	{  // 300 samples
 	
+	if (read) doread(&state, address);
+	
 	changeled(&state);
-	doload(&state, current); // 400mA charging :-)
+	doload(&state, current);
+	
 	
 	if ((cnt = encodemsg(msg, sizeof(msg), &state))) writeStream(fd, msg, cnt);
-	
-	cntsamples++;
-	
-	// usleep(250*1000);
-	// usleep(100*1000);
-	
-	// flush(fd);
 	
 	cnt=0;
 	
@@ -223,6 +233,12 @@ int main(int argc, char *argv[]) {
 	    logabba(L_MIN, "Did not get a sample even after retrying %d times", cnt);
 	    break;
 	}
+	
+	if (cntsamples==2 && read) {
+	    logabba(L_MIN, "Reading from address %i: %04X=%04X", address, state.ee_addr, state.ee_data);
+	}
+	
+	cntsamples++;
 	
     }
     

@@ -18,8 +18,8 @@ bat3_SOURCES= \
 	stream.h \
 	convert.c \
 	convert.h \
-	functions.c \
-	batfunc.h \
+	bat3func.c \
+	bat3func.h \
 	tsbat3.h
 	
 

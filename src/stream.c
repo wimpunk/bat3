@@ -99,7 +99,7 @@ int writeStream(int fd, unsigned char *msg, int len) {
     
     cnt = write(fd, mymsg, pos);
     
-    logabba(L_INFO, "Write returned %d while len=%d, checksum is %04X for %s", cnt, len, calcCrc(msg, len), converted);
+    logabba(L_INFO, "Write returned %d while pos=%d, checksum is %04X for %s", cnt, pos, calcCrc(msg, len), converted);
     
     return cnt;
     

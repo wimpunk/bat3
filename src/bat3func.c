@@ -9,8 +9,23 @@
  * */
 
 #include "bat3.h"
+#include "bat3func.h"
+
 #include "log.h"
 #include "convert.h"
+
+/*
+ TODO Need 2 fid a solution for this
+ */
+
+
+typedef enum  {
+    WRITE,
+    LISTEN,
+    DONE
+} romstate_t;
+romstate_t romstate=WRITE;
+
 
 void changeled(struct bat3* state) {
     if (state->led == ON) {
@@ -66,7 +81,7 @@ void doload(struct bat3* state, int target) {
 	}
 	
 	// logabba(L_MIN, "Would add %04X ticks", (diff*100/12));
-		
+	
 	if (newpwm<0) newpwm = 0;
 	if (newpwm>state->pwm_t) newpwm = state->pwm_t;
 	
@@ -75,4 +90,36 @@ void doload(struct bat3* state, int target) {
 	
     }
 }
+
+void doread(struct bat3* state, int address) {
+    
+    logabba(L_MIN, "doread: reading from address = %04X", address);
+    
+    if (romstate == WRITE) {
+	if ((state->ee_addr == address) && (state->ee_read == ON)) {
+	    romstate = LISTEN;
+	} else {
+	    state->ee_addr  = address;
+	    state->ee_read  = ON ;
+	    state->ee_write = OFF;
+	    state->ee_data  = 0x00; // don't know if we need this
+	}
+    }
+    
+    if (romstate == LISTEN) {
+	if ((state->ee_addr == address) && (state->ee_read == OFF)) {
+	    romstate = DONE;
+	} else {
+	    state->ee_addr  = address;
+	    state->ee_read  = OFF;
+	    state->ee_write = OFF;
+	}
+    }
+    
+    logabba(L_MIN, "addr=%04X, read=%s, write=%s, data=%04X",
+	state->ee_addr, print_onoff(state->ee_read), print_onoff(state->ee_write), state->ee_data);
+    
+    
+}
+
 
