@@ -151,7 +151,7 @@ int main(int argc, char *argv[]) {
     int read  = 0;
     int write = 0;
     
-    struct bat3 state;
+    struct bat3 state, prevstate;
     
     strncpy(device, BAT3DEV, sizeof(BAT3DEV));
     
@@ -199,7 +199,7 @@ int main(int argc, char *argv[]) {
     }
     
     
-    if ((samples<0)) samples = DEFAULT_SAMPLES;
+    if ((samples<-1)) samples = DEFAULT_SAMPLES;
     if ((current<0) || (current>1000)) current = DEFAULT_CURRENT;
     if ((loglevel<L_MIN) || (loglevel>L_MAX)) loglevel = DEFAULT_LOGLEVEL;
     
@@ -213,18 +213,23 @@ int main(int argc, char *argv[]) {
     }
     
     cntsamples=0;
-    while (cntsamples<samples)	{  // 300 samples
+    while ((cntsamples<samples) || (samples == -1))	{
 	
 	if (read) doread(&state, address);
 	
-	changeled(&state);
-	doload(&state, current);
+	if (state.batRun == ON) {
+	    state.led = OFF;
+	} else {
+	    changeled(&state);
+	    doload(&state, current);
+	}
 	
 	
 	if ((cnt = encodemsg(msg, sizeof(msg), &state))) writeStream(fd, msg, cnt);
 	
 	cnt=0;
 	
+	prevstate = state;
 	while (!getsample(fd, &state) && cnt<MAX_RETRIES) {
 	    cnt++;
 	}
@@ -236,6 +241,10 @@ int main(int argc, char *argv[]) {
 	
 	if (cntsamples==2 && read) {
 	    logabba(L_MIN, "Reading from address %i: %04X=%04X", address, state.ee_addr, state.ee_data);
+	}
+
+	if (state.batRun != prevstate.batRun) {
+	    logabba(L_MIN, "Running on %s",state.batRun==ON?"batteries":"current" );
 	}
 	
 	cntsamples++;
