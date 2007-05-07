@@ -103,7 +103,7 @@ static void print_bat3(struct bat3* mybat3) {
     printf("battery current          = %04X (%3.2fmA)\n", mybat3->bat_i, battI(mybat3->bat_i)/1000.0); //
     printf("low time                 = %04X\n", mybat3->pwm_lo); //
     printf("high & low time          = %04X\n", mybat3->pwm_t); //
-    printf("temperature              = %04X\n", mybat3->temp); //  in TMP124 format
+    printf("temperature              = %04X (%3.2fC)\n", mybat3->temp, tempC(mybat3->temp)); //  in TMP124 format
     printf("EEPROM address           = %04X\n", mybat3->ee_addr);
     printf("EEPROM data              = %04X\n", mybat3->ee_data);
     
@@ -203,7 +203,7 @@ int encodemsg(char *msg, int size, struct bat3* mybat3) {
     req->ee_addr   = mybat3->ee_addr;
     req->ee_data   = mybat3->ee_data;
     
-    logabba(L_MIN, "req->ee_addr = %04X, req->ee_data = %04X", req->ee_addr, req->ee_data);
+    // logabba(L_MIN, "req->ee_addr = %04X, req->ee_data = %04X", req->ee_addr, req->ee_data);
     logabba(L_MAX, "Encodemsg: req->_led = %i, mybat3->led = %s", req->_led, mybat3->led==ON?"ON":"OFF");
     
     return (sizeof(struct BAT3request));

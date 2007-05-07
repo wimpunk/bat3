@@ -43,6 +43,7 @@ void doload(struct bat3* state, int target) {
     // OP AMP must be enabled for charging to work
     if (state->batRun == ON) {
 	logabba(L_NOTICE, "Running on batt...");
+	// state->opampEn  = OFF;  // i think this halts the battery function
 	state->opampEn  = OFF;
 	state->PWM1en   = OFF;
 	state->PWM2en   = OFF;
