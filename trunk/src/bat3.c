@@ -23,8 +23,7 @@
 #include "convert.h"
 #include "bat3func.h"
 
-// this one should be removed.
-#include "tsbat3.h"
+// #include "tsbat3.h"
 
 #define BAT3DEV "/dev/ttyTS0"
 #define DEFAULT_LOGLEVEL L_STD
@@ -114,7 +113,6 @@ static int getsample(int fd, struct bat3 *sample) {
 }
 
 static void usage(char *progname) {
-    // TODO: shit opkuisen
     printf("\n");
     printf("Usage\n");
     printf("\n");
@@ -129,13 +127,14 @@ static void usage(char *progname) {
     printf("\n");
 }
 
-
-static void flush(int fd) {
-    int cnt=0;
-    char c;
-    while ((read(fd, &c, 1))>0) cnt++;
-    logabba(L_MAX, "Flush was reading %d bytes", cnt);
-}
+/*
+ static void flush(int fd) {
+ int cnt=0;
+ char c;
+ while ((read(fd, &c, 1))>0) cnt++;
+ logabba(L_MAX, "Flush was reading %d bytes", cnt);
+ }
+ */
 
 int main(int argc, char *argv[]) {
     int c, fd;
@@ -157,32 +156,35 @@ int main(int argc, char *argv[]) {
     
     while ((c=getopt(argc, argv, "a:c:d:h?l:rs:"))!=EOF) {
 	switch (c) {
-	    case 'a': //address
+	    case 'a': // address
 		address=atoi(optarg);
 		break;
-	    case 'c': //current
+	    case 'c': // current
 		current = atoi(optarg);
 		break;
-	    case 'd': //device
+	    case 'd': // device
 		strncpy(device, optarg, sizeof(device)-1);
 		printf("I'll read device %s\n", device);
 		break;
-	    case 'l': //loglevel
+	    case 'l': // loglevel
 		loglevel = atoi(optarg);
 		break;
-	    case 'r': //read
+	    case 'r': // read
 		read=1;
 		break;
-	    case 's': //loglevel
+	    case 's': // samples
 		samples = atoi(optarg);
 		break;
-		
+	    case 'w':
+		write = 1;
+		break;
 		
 		
 	    case '?':
 	    case 'h':
-	    default: errcnt++;
-	    break;
+	    default:
+		errcnt++;
+		
 	}
 	if (errcnt) break;
     }
@@ -201,8 +203,7 @@ int main(int argc, char *argv[]) {
     
     if ((samples<-1)) samples = DEFAULT_SAMPLES;
     if ((current<0) || (current>1000)) current = DEFAULT_CURRENT;
-    if ((loglevel<L_MIN) || (loglevel>L_MAX)) loglevel = DEFAULT_LOGLEVEL;
-    
+
     setloglevel(loglevel, "bat3");
     
     logabba(L_MIN, "%s started, loglevel %i, getting %d samples, using %imA to load", argv[0], loglevel, samples, current);
@@ -215,6 +216,10 @@ int main(int argc, char *argv[]) {
     cntsamples=0;
     while ((cntsamples<samples) || (samples == -1))	{
 	
+	// TODO: quick hack
+	// if ((cntsamples == 0))
+	state.softJP3 = ON;
+	
 	if (read) doread(&state, address);
 	
 	if (state.batRun == ON) {
@@ -222,10 +227,14 @@ int main(int argc, char *argv[]) {
 	} else {
 	    changeled(&state);
 	    doload(&state, current);
+	    logabba(L_MAX, "Switching led to %s", print_onoff(state.led));
 	}
 	
 	
-	if ((cnt = encodemsg(msg, sizeof(msg), &state))) writeStream(fd, msg, cnt);
+	if ((cnt = encodemsg(msg, sizeof(msg), &state))) {
+	    logabba(L_INFO, "Writing msg");
+	    writeStream(fd, msg, cnt);
+	}
 	
 	cnt=0;
 	
@@ -242,12 +251,14 @@ int main(int argc, char *argv[]) {
 	if (cntsamples==2 && read) {
 	    logabba(L_MIN, "Reading from address %i: %04X=%04X", address, state.ee_addr, state.ee_data);
 	}
-
+	
 	if (state.batRun != prevstate.batRun) {
-	    logabba(L_MIN, "Running on %s",state.batRun==ON?"batteries":"current" );
+	    logabba(L_MIN, "Running on %s", state.batRun==ON?"batteries":"current" );
 	}
 	
 	cntsamples++;
+	
+	usleep(100);
 	
     }
     
