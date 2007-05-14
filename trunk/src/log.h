@@ -28,21 +28,14 @@
 #define  L_NOTICE     LOG_NOTICE
 #define  L_INFO       LOG_INFO
 
-#define  L_MAX        LOG_DEBUG        // WAS ALL_LOG
+#define  L_MAX        LOG_DEBUG 
 
-#define  F_KK           LOG_LOCAL0      // for kk debugging
-#define  F_DB           LOG_LOCAL1      // for database related stuff
-#define  F_TR           LOG_LOCAL2      // for tracing execution
-
-#define  F_ABBA         LOG_LOCAL7      // default dumpster
-
-#define L_TRACE      L_MAX | F_TR       // convenience macros
+#ifndef LOGFACILITY
+    #define LOGFACILITY LOG_LOCAL7
+#endif
 
 void logabba(int prio,const char *mess, ...);
 void setloglevel(int newlevel, char *progi);
-void setfacility(int newfacility);
 int getloglevel(void);
-char *fmtt(void);
-
 #endif
 
