@@ -40,7 +40,11 @@ void changeled(struct bat3* state) {
 
 void doload(struct bat3* state, int target) {
     
-    // OP AMP must be enabled for charging to work
+    int diff;
+    int newpwm;
+    int pwmdiff;
+    
+    
     if (state->batRun == ON) {
 	logabba(L_NOTICE, "Running on batt...");
 	// state->opampEn  = OFF;  // i think this halts the battery function
@@ -53,35 +57,26 @@ void doload(struct bat3* state, int target) {
 	state->opampEn  = ON;
 	state->PWM1en   = ON;
 	state->PWM2en   = ON;
-	
 	state->buckEn   = OFF;
 	state->offsetEn = OFF;
-	// 	state->pwm_lo   -= 0x10;
 	state->pwm_t    = 500;
-	
-	int diff;
-	int newpwm;
 	
 	logabba(L_NOTICE, "Doload: target=%imA, current=%imA" , target, battI(state->bat_i)/1000);
 	
-	// diff = target - battI(state->bat_i)/10000;
-	diff = target - battI(state->bat_i)/1000;
-	
-	// mod  = (abs(target*1000 - (state->bat_i) - 30000) / 2);
-	
-	/* if diff>0: to less current, lesser pwm_lo */
-	
-	// if (diff>50) newpwm = state->pwm_lo-1;
+	diff = target - battI(state->bat_i)/1000;   // difference between wanted & current
+	pwmdiff = (state->pwm_t - state->pwm_lo)/2; // if difference is big enough, we change it logarithmic
 	
 	newpwm = state->pwm_lo;
 	
-	if (diff>50) {
+	if (diff>100) {
+	    newpwm -= pwmdiff;
+	} else if (diff<-100) {
+	    newpwm += pwmdiff;
+	} else if (diff>50) {
 	    newpwm -= 1;
 	} else if (diff<-50) {
 	    newpwm += 1;
 	}
-	
-	// logabba(L_MIN, "Would add %04X ticks", (diff*100/12));
 	
 	if (newpwm<0) newpwm = 0;
 	if (newpwm>state->pwm_t) newpwm = state->pwm_t;
@@ -118,7 +113,7 @@ void doread(struct bat3* state, int address) {
     }
     
     logabba(L_MIN, "addr=%04X, read=%s, write=%s, data=%04X",
-	state->ee_addr, print_onoff(state->ee_read), print_onoff(state->ee_write), state->ee_data);
+    state->ee_addr, print_onoff(state->ee_read), print_onoff(state->ee_write), state->ee_data);
     
     
 }
