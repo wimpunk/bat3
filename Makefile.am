@@ -25,7 +25,7 @@
 #man_MANS=bat3.1
 
 SUBDIRS=src
-EXTRA_DIST=ChangeLog
+EXTRA_DIST=ChangeLog 
 
 ChangeLog: src 
 	svn2cl --group-by-day -i
