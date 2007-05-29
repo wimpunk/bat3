@@ -46,13 +46,33 @@ void doload(struct bat3* state, int target) {
     
     
     if (state->batRun == ON) {
-	logabba(L_NOTICE, "Running on batt...");
+	if (state->softJP3 == ON) {
+	    // TODO: I think I'm some bytes somewhere.  I always have to set this byte
+	    // logabba(L_MIN, "Switching softJP3 OFF, softjp3=%s",print_onoff(state->softJP3));
+	    state->softJP3 = OFF;
+	}
+	logabba(L_INFO, "Running on batt...");
 	// state->opampEn  = OFF;  // i think this halts the battery function
-	state->opampEn  = OFF;
-	state->PWM1en   = OFF;
-	state->PWM2en   = OFF;
+	/* Currently the system stops when running on batteries... we'll remove this lines
+	
+	 state->opampEn  = OFF;
+	 state->PWM1en   = OFF;
+	 state->PWM2en   = OFF;
+	 */
+	state->opampEn  = ON;
+	// state->PWM1en   = OFF;
+	// state->PWM2en   = OFF;
+	state->buckEn = OFF;
+	state->offsetEn = OFF;
+	
 	
     } else {
+	
+	if (state->softJP3 == ON) {
+	    // logabba(L_MIN, "Switching softJP3 OFF, softjp3=%s",print_onoff(state->softJP3));
+	    state->softJP3 = OFF;
+	}
+	
 	logabba(L_NOTICE, "NOT running on batt...");
 	state->opampEn  = ON;
 	state->PWM1en   = ON;
@@ -112,10 +132,41 @@ void doread(struct bat3* state, int address) {
 	}
     }
     
-    logabba(L_MIN, "addr=%04X, read=%s, write=%s, data=%04X",
+    logabba(L_MIN, "doread: addr=%04X, read=%s, write=%s, data=%04X",
     state->ee_addr, print_onoff(state->ee_read), print_onoff(state->ee_write), state->ee_data);
     
     
 }
 
+void dowrite(struct bat3* state, int address, int value) {
+    
+    logabba(L_MIN, "dowrite: writing %04X to address = %04X", value, address);
+    
+    
+    if (romstate == WRITE) {
+	if ((state->ee_addr == address) && (state->ee_write == ON)) {
+	    romstate = LISTEN;
+	} else {
+	    state->ee_addr  = address;
+	    state->ee_read  = OFF ;
+	    state->ee_write = ON;
+	    state->ee_data  = value; // don't know if we need this
+	}
+    }
+    
+    if (romstate == LISTEN) {
+	if ((state->ee_addr == address) && (state->ee_write == OFF)) {
+	    romstate = DONE;
+	} else {
+	    state->ee_addr  = address;
+	    state->ee_read  = OFF;
+	    state->ee_write = OFF;
+	}
+    }
+    
+    logabba(L_MIN, "dowrite: addr=%04X, read=%s, write=%s, data=%04X",
+    state->ee_addr, print_onoff(state->ee_read), print_onoff(state->ee_write), state->ee_data);
+    
+    
+}
 
