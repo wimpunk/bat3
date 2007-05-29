@@ -149,12 +149,13 @@ int main(int argc, char *argv[]) {
     int address  = DEFAULT_ADDRESS;
     int read  = 0;
     int write = 0;
+    int value = 0;
     
     struct bat3 state, prevstate;
     
     strncpy(device, BAT3DEV, sizeof(BAT3DEV));
     
-    while ((c=getopt(argc, argv, "a:c:d:h?l:rs:"))!=EOF) {
+    while ((c=getopt(argc, argv, "a:c:d:h?l:rs:w:"))!=EOF) {
 	switch (c) {
 	    case 'a': // address
 		address=atoi(optarg);
@@ -177,6 +178,7 @@ int main(int argc, char *argv[]) {
 		break;
 	    case 'w':
 		write = 1;
+		value = atoi(optarg);
 		break;
 		
 		
@@ -206,7 +208,7 @@ int main(int argc, char *argv[]) {
 
     setloglevel(loglevel, "bat3");
     
-    logabba(L_MIN, "%s started, loglevel %i, getting %d samples, using %imA to load", argv[0], loglevel, samples, current);
+    logabba(L_MIN, "%s ($Rev$) started, loglevel %i, getting %d samples, using %imA to load", argv[0], loglevel, samples, current);
     
     if (!getsample(fd, &state)) {
 	logabba(L_MIN, "Did not get a sample");
@@ -221,9 +223,12 @@ int main(int argc, char *argv[]) {
 	state.softJP3 = ON;
 	
 	if (read) doread(&state, address);
+	if (write) dowrite(&state, address, value);
 	
+	// Even when running on batteries, we have to kietel the opamp
 	if (state.batRun == ON) {
 	    state.led = OFF;
+	    doload(&state, current);
 	} else {
 	    changeled(&state);
 	    doload(&state, current);

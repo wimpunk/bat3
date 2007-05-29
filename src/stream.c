@@ -161,6 +161,9 @@ int readStream(int fd, unsigned char *msg, int max) {
     
     if (pos>0) {
 	
+	if (state!=STATE_ENDED) {
+	    logabba(L_MIN, "Ended before correct state, had 2 wait 2 long");
+	}
 	converted[0]=0;
 	for (cnt=0;cnt<pos;cnt++) {
 	    strpos+=snprintf(converted+strpos, sizeof(converted)-strpos, " %02X", msg[cnt]);
