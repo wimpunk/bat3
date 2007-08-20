@@ -14,6 +14,8 @@ bat3_SOURCES= \
 	log.h \
 	term.c \
 	term.h \
+	mysocket.c \
+	mysocket.h \
 	stream.c \
 	stream.h \
 	convert.c \
