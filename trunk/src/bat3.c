@@ -7,6 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#include <errno.h>
 
 /*
  * $Id$
@@ -74,7 +75,7 @@ char *print_onoff(onoff_t onoff) {
  }
  */
 
-static int getsample(int fd, struct bat3 *sample) {
+static int getsample(int fd, struct bat3 *sample, FILE *logfile) {
     
     struct bat3 temp;
     int cnt;
@@ -91,7 +92,7 @@ static int getsample(int fd, struct bat3 *sample) {
 	    continue;
 	}
 	
-	if (decodemsg(msg, cnt, &temp)!=0) {
+	if (decodemsg(msg, cnt, &temp, logfile)!=0) {
 	    logabba(L_MIN, "Could not decodemsg, error=%d", error);
 	    error++;
 	    continue;
@@ -120,6 +121,7 @@ static void usage(char *progname) {
     printf("      -a address: address to use while reading/writing, default %i\n", DEFAULT_ADDRESS);
     printf("      -c current: current to load (mA), default %i\n", DEFAULT_CURRENT);
     printf("      -d device: device to use, default %s\n", BAT3DEV );
+    printf("      -f logfile: file to dump arrays to, default /dev/null");
     printf("      -l loglevel: loglevel to use, default %i\n", DEFAULT_LOGLEVEL );
     printf("      -r : read from [address]");
     printf("      -s samples: maxsamples to use, default %i\n", DEFAULT_SAMPLES );
@@ -151,11 +153,13 @@ int main(int argc, char *argv[]) {
     int write = 0;
     int value = 0;
     
+    FILE *logfile = NULL;
+    
     struct bat3 state, prevstate;
     
     strncpy(device, BAT3DEV, sizeof(BAT3DEV));
     
-    while ((c=getopt(argc, argv, "a:c:d:h?l:rs:w:"))!=EOF) {
+    while ((c=getopt(argc, argv, "a:c:d:f:h?l:rs:w:"))!=EOF) {
 	switch (c) {
 	    case 'a': // address
 		address=atoi(optarg);
@@ -167,6 +171,11 @@ int main(int argc, char *argv[]) {
 		strncpy(device, optarg, sizeof(device)-1);
 		printf("I'll read device %s\n", device);
 		break;
+	    case 'f': // logfile
+		logfile = fopen(optarg,"a");
+		if (logfile == NULL){
+		    fprintf(stderr, "Error opening logfile %s: %s", optarg, strerror(errno));
+		}
 	    case 'l': // loglevel
 		loglevel = atoi(optarg);
 		break;
@@ -210,7 +219,7 @@ int main(int argc, char *argv[]) {
     
     logabba(L_MIN, "%s ($Rev$) started, loglevel %i, getting %d samples, using %imA to load", argv[0], loglevel, samples, current);
     
-    if (!getsample(fd, &state)) {
+    if (!getsample(fd, &state, logfile)) {
 	logabba(L_MIN, "Did not get a sample");
 	return 0;
     }
@@ -244,7 +253,7 @@ int main(int argc, char *argv[]) {
 	cnt=0;
 	
 	prevstate = state;
-	while (!getsample(fd, &state) && cnt<MAX_RETRIES) {
+	while (!getsample(fd, &state,logfile) && cnt<MAX_RETRIES) {
 	    cnt++;
 	}
 	
