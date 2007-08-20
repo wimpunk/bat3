@@ -23,6 +23,7 @@
 #include "bat3.h"
 #include "convert.h"
 #include "bat3func.h"
+#include "mysocket.h"
 
 // #include "tsbat3.h"
 
@@ -32,6 +33,7 @@
 #define DEFAULT_CURRENT  400
 #define DEFAULT_ADDRESS  0x80
 #define DEFAULT_VALUE    0xFF
+#define DEFAULT_PORT     1302
 #define MAX_RETRIES 5
 
 char *print_onoff(onoff_t onoff) {
@@ -123,6 +125,7 @@ static void usage(char *progname) {
     printf("      -d device: device to use, default %s\n", BAT3DEV );
     printf("      -f logfile: file to dump arrays to, default /dev/null");
     printf("      -l loglevel: loglevel to use, default %i\n", DEFAULT_LOGLEVEL );
+    printf("      -p portnr: portnumber to listen to, default %i\n", DEFAULT_PORT);
     printf("      -r : read from [address]");
     printf("      -s samples: maxsamples to use, default %i\n", DEFAULT_SAMPLES );
     printf("      -w value: write value to [address], default %i\n", DEFAULT_VALUE);
@@ -138,20 +141,76 @@ static void usage(char *progname) {
  }
  */
 
+
+int doRondje(int fd, struct bat3 *sample, int current, FILE *logfile) {
+    struct bat3 state = *sample, prevstate;
+    int cnt;
+    char msg[56];
+    // while ((cntsamples<samples) || (samples == -1))	{
+    
+    // TODO: quick hack
+    // if ((cntsamples == 0))
+    state.softJP3 = ON;
+    
+    
+    // Even when running on batteries, we have to kietel the opamp
+    if (state.batRun == ON) {
+	state.led = OFF;
+	doload(&state, current);
+    } else {
+	changeled(&state);
+	doload(&state, current);
+	logabba(L_MAX, "Switching led to %s", print_onoff(state.led));
+    }
+    
+    
+    if ((cnt = encodemsg(msg, sizeof(msg), &state))) {
+	logabba(L_INFO, "Writing msg");
+	writeStream(fd, msg, cnt);
+    }
+    
+    cnt=0;
+    
+    prevstate = state;
+    while (!getsample(fd, &state, logfile) && cnt<MAX_RETRIES) {
+	cnt++;
+    }
+    
+    if (cnt>=MAX_RETRIES) {
+	logabba(L_MIN, "Did not get a sample even after retrying %d times", cnt);
+	return -1;
+    }
+    
+    
+    
+    // usleep(100);
+    
+    return 0;
+    
+}
+
+
 int main(int argc, char *argv[]) {
     int c, fd;
     char device[50]=""; // device to use
+    
     int errcnt=0;
-    char msg[56];
-    int cnt, cntsamples;
+    
+    //    int cnt,
+    int cntsamples;
     
     int loglevel = DEFAULT_LOGLEVEL;
     int samples  = DEFAULT_SAMPLES;
     int current  = DEFAULT_CURRENT;
     int address  = DEFAULT_ADDRESS;
+    int portno   = DEFAULT_PORT;
+    
+    
     int read  = 0;
     int write = 0;
     int value = 0;
+    
+    int socketfd = 0;
     
     FILE *logfile = NULL;
     
@@ -159,7 +218,8 @@ int main(int argc, char *argv[]) {
     
     strncpy(device, BAT3DEV, sizeof(BAT3DEV));
     
-    while ((c=getopt(argc, argv, "a:c:d:f:h?l:rs:w:"))!=EOF) {
+    
+    while ((c=getopt(argc, argv, "a:c:d:f:h?l:p:rs:w:"))!=EOF) {
 	switch (c) {
 	    case 'a': // address
 		address=atoi(optarg);
@@ -172,13 +232,17 @@ int main(int argc, char *argv[]) {
 		printf("I'll read device %s\n", device);
 		break;
 	    case 'f': // logfile
-		logfile = fopen(optarg,"a");
+		logfile = fopen(optarg, "a");
 		if (logfile == NULL){
 		    fprintf(stderr, "Error opening logfile %s: %s", optarg, strerror(errno));
 		}
 	    case 'l': // loglevel
 		loglevel = atoi(optarg);
 		break;
+	    case 'p': // pipe
+		portno = atoi(optarg);
+		break;
+		
 	    case 'r': // read
 		read=1;
 		break;
@@ -211,13 +275,17 @@ int main(int argc, char *argv[]) {
 	return 0;
     }
     
+    if ((socketfd =  openSocket(portno)) == -1) {
+	logabba(L_MIN, "Could not open port %i", portno);
+	return 0;
+    }
     
     if ((samples<-1)) samples = DEFAULT_SAMPLES;
     if ((current<0) || (current>1000)) current = DEFAULT_CURRENT;
-
+    
     setloglevel(loglevel, "bat3");
     
-    logabba(L_MIN, "%s ($Rev$) started, loglevel %i, getting %d samples, using %imA to load", argv[0], loglevel, samples, current);
+    logabba(L_MIN, "%s ($Rev$) started, loglevel %i, getting %d samples, using %imA to load, listening to port %d", argv[0], loglevel, samples, current, portno);
     
     if (!getsample(fd, &state, logfile)) {
 	logabba(L_MIN, "Did not get a sample");
@@ -225,54 +293,49 @@ int main(int argc, char *argv[]) {
     }
     
     cntsamples=0;
-    while ((cntsamples<samples) || (samples == -1))	{
-	
-	// TODO: quick hack
-	// if ((cntsamples == 0))
-	state.softJP3 = ON;
-	
-	if (read) doread(&state, address);
-	if (write) dowrite(&state, address, value);
-	
-	// Even when running on batteries, we have to kietel the opamp
-	if (state.batRun == ON) {
-	    state.led = OFF;
-	    doload(&state, current);
-	} else {
-	    changeled(&state);
-	    doload(&state, current);
-	    logabba(L_MAX, "Switching led to %s", print_onoff(state.led));
-	}
-	
-	
-	if ((cnt = encodemsg(msg, sizeof(msg), &state))) {
-	    logabba(L_INFO, "Writing msg");
-	    writeStream(fd, msg, cnt);
-	}
-	
-	cnt=0;
-	
+    
+    int FlushTime = 1000 * 1000;
+    fd_set         rfds;
+    struct timeval tv;
+    
+    FD_ZERO( &rfds );
+    FD_SET( fd, &rfds );
+    FD_SET( socketfd, &rfds );
+    tv.tv_sec = FlushTime/1000000;
+    tv.tv_usec = FlushTime%1000000;
+    
+    // while( select( FD_SETSIZE, &rfds, NULL, NULL, &tv ) > 0) {
+    while ( select( FD_SETSIZE, &rfds, NULL, NULL, NULL ) > 0 ) {
 	prevstate = state;
-	while (!getsample(fd, &state,logfile) && cnt<MAX_RETRIES) {
-	    cnt++;
+	
+	if (FD_ISSET(socketfd, &rfds)) {
+	    // iemand klopt aant
+	    logabba(L_MIN, "Iemand klopt");
+	    acceptSocket(socketfd);
 	}
 	
-	if (cnt>=MAX_RETRIES) {
-	    logabba(L_MIN, "Did not get a sample even after retrying %d times", cnt);
+	if (FD_ISSET(fd, &rfds)) {
+	    
+	    if (read) doread(&state, address);
+	    if (write) dowrite(&state, address, value);
+	    
+	    doRondje(fd, &state, current, logfile);
+	    cntsamples++;
+	    if (cntsamples==3 && read) {
+		logabba(L_MIN, "Reading from address %i: %04X=%04X", address, state.ee_addr, state.ee_data);
+	    }
+	    
+	    if (state.batRun != prevstate.batRun) {
+		logabba(L_MIN, "Running on %s", state.batRun==ON?"batteries":"current" );
+	    }
+	    logabba(L_MIN, "Loading sample " );
+	}
+	if (!((cntsamples<samples) || (samples == -1)))	{
 	    break;
 	}
 	
-	if (cntsamples==2 && read) {
-	    logabba(L_MIN, "Reading from address %i: %04X=%04X", address, state.ee_addr, state.ee_data);
-	}
-	
-	if (state.batRun != prevstate.batRun) {
-	    logabba(L_MIN, "Running on %s", state.batRun==ON?"batteries":"current" );
-	}
-	
-	cntsamples++;
-	
-	usleep(100);
+	FD_SET( fd, &rfds );
+	FD_SET( socketfd, &rfds );
 	
     }
     
@@ -281,5 +344,9 @@ int main(int argc, char *argv[]) {
     return 0;
     
 }
+
+
+
+
 
 // vim:set autoindent

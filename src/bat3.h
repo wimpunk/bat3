@@ -10,6 +10,7 @@
 #define BAT3_H_INCLUDED
 
 #include <stdio.h>
+#include "log.h"
 
 typedef enum {
 	ON,
