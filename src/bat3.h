@@ -9,6 +9,8 @@
 #ifndef BAT3_H_INCLUDED
 #define BAT3_H_INCLUDED
 
+#include <stdio.h>
+
 typedef enum {
 	ON,
 	OFF

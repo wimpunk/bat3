@@ -14,16 +14,16 @@
 
 float adcV(unsigned short ticks) {
     /* According to http://tech.groups.yahoo.com/group/ts-7000/message/5402
-These inputs are coming directly from an ADC. To get the ADC
- output the
- supply voltage is multiplied by ~0.07, then divided by 3.3V, then
- multiplied
- by 65536. This corresponds to approximately 700mV per unit, so 39812 *
- 700mV is around 28V. The regulated value is approximately 190mV per
- unit,
- so 26623 * 190mV is right around 5V. The values are only
- approximate due to
- part tolerances and lack of ADC calibration.
+     These inputs are coming directly from an ADC. To get the ADC
+     output the
+     supply voltage is multiplied by ~0.07, then divided by 3.3V, then
+     multiplied
+     by 65536. This corresponds to approximately 700mV per unit, so 39812 *
+     700mV is around 28V. The regulated value is approximately 190mV per
+     unit,
+     so 26623 * 190mV is right around 5V. The values are only
+     approximate due to
+     part tolerances and lack of ADC calibration.
      */
     
     // return (ticks * 0.07 / 3.3 * 65536);
@@ -68,64 +68,67 @@ float tempC(short int tmp) {
     
 }
 
-static void print_BAT3reply(struct BAT3reply* reply) {
-    printf("->print_bat3reply\n");
-    printf("adc = %04X - input supply voltage     %2.2fV\n", reply->adc0, battV(reply->adc0));
-    printf("adc = %04X - regulated supply voltage %2.2fV\n", reply->adc2, battV(reply->adc2));
-    printf("adc = %04X - battery voltage          %2.2fV\n", reply->adc6, battV(reply->adc6));
-    printf("adc = %04X - battery current          %2.2fmA\n", reply->adc7, battI(reply->adc7)/1000.0);
-    printf("pwm = %04X - high time                %dmA\n", reply->pwm_lo, reply->pwm_lo);
-    printf("pwm = %04X - pulse time               %dmA\n", reply->pwm_t, reply->pwm_t);
-    printf("temp= %04X - temperature in TMP124    %2.2fC\n", reply->temp, tempC(reply->temp));
-    printf("out = %02X - outputs                  %d\n", reply->outputs, reply->outputs);
-    printf("             PWM1en:    %s\n", reply->PWM1en?"ON":"OFF");
-    printf("             PWM2en:    %s\n", reply->PWM2en?"ON":"OFF");
-    printf("             _offsetEn: %s\n", reply->_offsetEn?"ON":"OFF");
-    printf("             _buckEn:   %s\n", reply->_buckEn?"ON":"OFF");
-    printf("             _led:      %s\n", reply->_led?"ON":"OFF");
-    printf("             _jp3:      %s\n", reply->_jp3?"ON":"OFF");
-    printf("             batRun:    %s\n", reply->batRun?"ON":"OFF");
-    printf("             ee_read:   %s\n", reply->ee_read?"ON":"OFF");
-    printf("             ee_write:  %s\n", reply->ee_write?"ON":"OFF");
-    printf("             ee_ready:  %s\n", reply->ee_ready?"ON":"OFF");
-    printf("             softJP3:  %s\n", reply->softJP3?"ON":"OFF");
-    /* PWM2en:1 _offsetEn:1 opampEn:1 _buckEn:1, _led:1 _jp3:1 batRun:1 ee_read:1 ee_write:1 ee_ready:1 softJP3:1; */
-    printf("add = %02X - address                  %d\n", reply->ee_addr, reply->ee_addr);
-    printf("dat = %02X - date                     %d\n", reply->ee_data, reply->ee_data);
+static void print_BAT3reply(FILE *fd, struct BAT3reply* reply) {
+    if (fd != NULL){
+	
+	fprintf(fd, "->print_bat3reply\n");
+	fprintf(fd, "adc = %04X - input supply voltage     %2.2fV\n", reply->adc0, battV(reply->adc0));
+	fprintf(fd, "adc = %04X - regulated supply voltage %2.2fV\n", reply->adc2, battV(reply->adc2));
+	fprintf(fd, "adc = %04X - battery voltage          %2.2fV\n", reply->adc6, battV(reply->adc6));
+	fprintf(fd, "adc = %04X - battery current          %2.2fmA\n", reply->adc7, battI(reply->adc7)/1000.0);
+	fprintf(fd, "pwm = %04X - high time                %dmA\n", reply->pwm_lo, reply->pwm_lo);
+	fprintf(fd, "pwm = %04X - pulse time               %dmA\n", reply->pwm_t, reply->pwm_t);
+	fprintf(fd, "temp= %04X - temperature in TMP124    %2.2fC\n", reply->temp, tempC(reply->temp));
+	fprintf(fd, "out = %02X - outputs                  %d\n", reply->outputs, reply->outputs);
+	fprintf(fd, "             PWM1en:    %s\n", reply->PWM1en?"ON":"OFF");
+	fprintf(fd, "             PWM2en:    %s\n", reply->PWM2en?"ON":"OFF");
+	fprintf(fd, "             _offsetEn: %s\n", reply->_offsetEn?"ON":"OFF");
+	fprintf(fd, "             _buckEn:   %s\n", reply->_buckEn?"ON":"OFF");
+	fprintf(fd, "             _led:      %s\n", reply->_led?"ON":"OFF");
+	fprintf(fd, "             _jp3:      %s\n", reply->_jp3?"ON":"OFF");
+	fprintf(fd, "             batRun:    %s\n", reply->batRun?"ON":"OFF");
+	fprintf(fd, "             ee_read:   %s\n", reply->ee_read?"ON":"OFF");
+	fprintf(fd, "             ee_write:  %s\n", reply->ee_write?"ON":"OFF");
+	fprintf(fd, "             ee_ready:  %s\n", reply->ee_ready?"ON":"OFF");
+	fprintf(fd, "             softJP3:  %s\n", reply->softJP3?"ON":"OFF");
+	/* PWM2en:1 _offsetEn:1 opampEn:1 _buckEn:1, _led:1 _jp3:1 batRun:1 ee_read:1 ee_write:1 ee_ready:1 softJP3:1; */
+	fprintf(fd, "add = %02X - address                  %d\n", reply->ee_addr, reply->ee_addr);
+	fprintf(fd, "dat = %02X - date                     %d\n", reply->ee_data, reply->ee_data);
+    }
 }
 
-static void print_bat3(struct bat3* mybat3) {
-    
-    printf("->print_bat3\n");
-    printf("input supply voltage     = %04X (%3.2fV)\n",  mybat3->inp_u, 0.70/1000 * (mybat3->inp_u)); //
-    printf("regulated supply voltage = %04X (%3.2fV)\n",  mybat3->reg_u, 0.19/1000 * (mybat3->reg_u)); //
-    printf("battery voltage          = %04X (%3.2fV)\n",  mybat3->bat_u, battV(mybat3->bat_u)); //
-    printf("battery current          = %04X (%3.2fmA)\n", mybat3->bat_i, battI(mybat3->bat_i)/1000.0); //
-    printf("low time                 = %04X\n", mybat3->pwm_lo); //
-    printf("high & low time          = %04X\n", mybat3->pwm_t); //
-    printf("temperature              = %04X (%3.2fC)\n", mybat3->temp, tempC(mybat3->temp)); //  in TMP124 format
-    printf("EEPROM address           = %04X\n", mybat3->ee_addr);
-    printf("EEPROM data              = %04X\n", mybat3->ee_data);
-    
-    printf("PWM1en   = %s\n", print_onoff(mybat3->PWM1en));
-    printf("PWM2en   = %s\n", print_onoff(mybat3->PWM2en));
-    printf("offsetEn = %s\n", print_onoff(mybat3->offsetEn));
-    printf("opampEn  = %s\n", print_onoff(mybat3->opampEn));
-    printf("buckEn   = %s\n", print_onoff(mybat3->buckEn));
-    printf("led      = %s\n", print_onoff(mybat3->led));
-    printf("jp3      = %s\n", print_onoff(mybat3->jp3));
-    printf("batRun   = %s\n", print_onoff(mybat3->batRun));
-    
-    printf("ee_read  = %s\n", print_onoff(mybat3->ee_read));
-    printf("ee_write = %s\n", print_onoff(mybat3->ee_write));
-    printf("ee_ready = %s\n", print_onoff(mybat3->ee_ready));
-    
-    printf("softJP3  = %s\n", print_onoff(mybat3->softJP3));
-    
+static void print_bat3(FILE *fd, struct bat3* mybat3) {
+    if (fd!=NULL) {
+	fprintf(fd, "->print_bat3\n");
+	fprintf(fd, "input supply voltage     = %04X (%3.2fV)\n",  mybat3->inp_u, 0.70/1000 * (mybat3->inp_u)); //
+	fprintf(fd, "regulated supply voltage = %04X (%3.2fV)\n",  mybat3->reg_u, 0.19/1000 * (mybat3->reg_u)); //
+	fprintf(fd, "battery voltage          = %04X (%3.2fV)\n",  mybat3->bat_u, battV(mybat3->bat_u)); //
+	fprintf(fd, "battery current          = %04X (%3.2fmA)\n", mybat3->bat_i, battI(mybat3->bat_i)/1000.0); //
+	fprintf(fd, "low time                 = %04X\n", mybat3->pwm_lo); //
+	fprintf(fd, "high & low time          = %04X\n", mybat3->pwm_t); //
+	fprintf(fd, "temperature              = %04X (%3.2fC)\n", mybat3->temp, tempC(mybat3->temp)); //  in TMP124 format
+	fprintf(fd, "EEPROM address           = %04X\n", mybat3->ee_addr);
+	fprintf(fd, "EEPROM data              = %04X\n", mybat3->ee_data);
+	
+	fprintf(fd, "PWM1en   = %s\n", print_onoff(mybat3->PWM1en));
+	fprintf(fd, "PWM2en   = %s\n", print_onoff(mybat3->PWM2en));
+	fprintf(fd, "offsetEn = %s\n", print_onoff(mybat3->offsetEn));
+	fprintf(fd, "opampEn  = %s\n", print_onoff(mybat3->opampEn));
+	fprintf(fd, "buckEn   = %s\n", print_onoff(mybat3->buckEn));
+	fprintf(fd, "led      = %s\n", print_onoff(mybat3->led));
+	fprintf(fd, "jp3      = %s\n", print_onoff(mybat3->jp3));
+	fprintf(fd, "batRun   = %s\n", print_onoff(mybat3->batRun));
+	
+	fprintf(fd, "ee_read  = %s\n", print_onoff(mybat3->ee_read));
+	fprintf(fd, "ee_write = %s\n", print_onoff(mybat3->ee_write));
+	fprintf(fd, "ee_ready = %s\n", print_onoff(mybat3->ee_ready));
+	
+	fprintf(fd, "softJP3  = %s\n", print_onoff(mybat3->softJP3));
+    }
 }
 
 // Converts an incomming msg to struct bat3
-int decodemsg(char *msg, int size, struct bat3* mybat3) {
+int decodemsg(char *msg, int size, struct bat3* mybat3, FILE* logfile) {
     struct BAT3reply *reply;
     
     if (size!=sizeof(struct BAT3reply)) {
@@ -136,7 +139,7 @@ int decodemsg(char *msg, int size, struct bat3* mybat3) {
     
     reply = (struct BAT3reply*) msg;
     
-    print_BAT3reply(reply);
+    print_BAT3reply(logfile, reply);
     // logabba(L_MIN,"Decoding got crc = %02X", reply->checksum);
     
     mybat3->inp_u    = reply->adc0 ; // input supply voltage
@@ -163,7 +166,7 @@ int decodemsg(char *msg, int size, struct bat3* mybat3) {
     mybat3->ee_write = reply->ee_write?ON:OFF;
     mybat3->ee_ready = reply->ee_ready?ON:OFF;
     
-    print_bat3(mybat3);
+    print_bat3(logfile, mybat3);
     
     return 0;
     
