@@ -117,7 +117,7 @@ static int getsample(int fd, struct bat3 *sample, FILE *logfile) {
 
 static void usage(char *progname) {
     printf("\n");
-    printf("Usage\n");
+    printf("Usage:\n");
     printf("\n");
     printf("   %s [-c current][-d device][-l loglevel][-r][-s samples][-w value]\n", progname);
     printf("      -a address: address to use while reading/writing, default %i\n", DEFAULT_ADDRESS);
@@ -126,9 +126,11 @@ static void usage(char *progname) {
     printf("      -f logfile: file to dump arrays to, default /dev/null");
     printf("      -l loglevel: loglevel to use, default %i\n", DEFAULT_LOGLEVEL );
     printf("      -p portnr: portnumber to listen to, default %i\n", DEFAULT_PORT);
-    printf("      -r : read from [address]");
+    printf("      -r : read from [address]\n");
     printf("      -s samples: maxsamples to use, default %i\n", DEFAULT_SAMPLES );
     printf("      -w value: write value to [address], default %i\n", DEFAULT_VALUE);
+    printf("\n");
+    printf("(bat3 revision $Rev$)\n");
     printf("\n");
 }
 
@@ -242,7 +244,6 @@ int main(int argc, char *argv[]) {
 	    case 'p': // pipe
 		portno = atoi(optarg);
 		break;
-		
 	    case 'r': // read
 		read=1;
 		break;
@@ -253,7 +254,6 @@ int main(int argc, char *argv[]) {
 		write = 1;
 		value = atoi(optarg);
 		break;
-		
 		
 	    case '?':
 	    case 'h':
@@ -276,9 +276,12 @@ int main(int argc, char *argv[]) {
     }
     
     if ((socketfd =  openSocket(portno)) == -1) {
-	logabba(L_MIN, "Could not open port %i", portno);
+	logabba(L_MIN, "Could not open port %i\n", portno);
 	return 0;
     }
+    
+    fprintf(stdout, "opening port returned %d", socketfd);
+    
     
     if ((samples<-1)) samples = DEFAULT_SAMPLES;
     if ((current<0) || (current>1000)) current = DEFAULT_CURRENT;
@@ -298,20 +301,39 @@ int main(int argc, char *argv[]) {
     fd_set         rfds;
     struct timeval tv;
     
-    FD_ZERO( &rfds );
-    FD_SET( fd, &rfds );
-    FD_SET( socketfd, &rfds );
-    tv.tv_sec = FlushTime/1000000;
-    tv.tv_usec = FlushTime%1000000;
-    
-    // while( select( FD_SETSIZE, &rfds, NULL, NULL, &tv ) > 0) {
-    while ( select( FD_SETSIZE, &rfds, NULL, NULL, NULL ) > 0 ) {
+    int connections[MAXSOCKET];
+    int cnt_connect=0;
+    int cnt;
+  
+    while (((cntsamples<samples) || (samples == -1)))	{
+	
+	FD_ZERO( &rfds );
+	FD_SET( fd, &rfds );
+	FD_SET( socketfd, &rfds );
+	
+	for (cnt=0; cnt<cnt_connect; cnt++) {
+	    FD_SET(connections[cnt], &rfds);
+	}
+	
+	tv.tv_sec  = FlushTime/1000000;
+	tv.tv_usec = FlushTime%1000000;
+	
+	
+	if (select( FD_SETSIZE, &rfds, NULL, NULL, &tv ) < 0) {
+	    fprintf(stderr, "Select error: %s", strerror(errno));
+	    return -1;
+	}
+	// while ( select( FD_SETSIZE, &rfds, NULL, NULL, NULL ) > 0 ) {
 	prevstate = state;
+	setBatState(&prevstate);
+	
 	
 	if (FD_ISSET(socketfd, &rfds)) {
+	    printf("socketfd\n");
 	    // iemand klopt aant
 	    logabba(L_MIN, "Iemand klopt");
-	    acceptSocket(socketfd);
+	    connections[cnt_connect++]=acceptSocket(socketfd);
+	    if (connections[cnt_connect-1] == -1) cnt_connect--;
 	}
 	
 	if (FD_ISSET(fd, &rfds)) {
@@ -328,10 +350,31 @@ int main(int argc, char *argv[]) {
 	    if (state.batRun != prevstate.batRun) {
 		logabba(L_MIN, "Running on %s", state.batRun==ON?"batteries":"current" );
 	    }
+	    
 	    logabba(L_MIN, "Loading sample " );
+	    
+	    tv.tv_sec  = FlushTime/1000000;
+	    tv.tv_usec = FlushTime%1000000;
+	    
 	}
-	if (!((cntsamples<samples) || (samples == -1)))	{
-	    break;
+	
+	for (cnt=0; cnt<cnt_connect; cnt++) {
+	    if (FD_ISSET(connections[cnt], &rfds)) {
+		printf("connection %d\n",cnt);
+		if (readSocket(connections[cnt])== -1) {
+		    int i;
+		    
+		    close(connections[cnt]);
+		    
+		    for (i=cnt+1; i<cnt_connect; i++) {
+			connections[i-1] = connections[i];
+		    }
+		    
+		    cnt_connect--;
+		    cnt--;
+		    
+		}
+	    }
 	}
 	
 	FD_SET( fd, &rfds );
