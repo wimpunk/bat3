@@ -15,8 +15,10 @@
 #include "convert.h"
 
 /*
- TODO Need 2 fid a solution for this
+ TODO Need 2 find a solution for this
  */
+
+struct bat3 curState;
 
 
 typedef enum  {
@@ -168,5 +170,15 @@ void dowrite(struct bat3* state, int address, int value) {
     state->ee_addr, print_onoff(state->ee_read), print_onoff(state->ee_write), state->ee_data);
     
     
+}
+
+void setBatState(struct bat3* newState)
+{
+    curState = *newState;
+}
+
+onoff_t getBatRun()
+{
+    return curState.batRun;
 }
 
