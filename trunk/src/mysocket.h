@@ -9,3 +9,6 @@
 
 int openSocket(int portno);
 int acceptSocket(int socketfd);
+int readSocket(int fd);
+
+#define MAXSOCKET 5

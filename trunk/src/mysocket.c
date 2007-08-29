@@ -15,12 +15,16 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <stdarg.h>
+#include <errno.h>
+
+
 
 #include "bat3.h"
 #include "mysocket.h"
 
-void writePrompt(int fd);
-int  readSocket (int fd);
+static void writePrompt(int fd);
+static int writeFd(int fd, const char *msg, ...);
 
 int openSocket(int portno) {
     
@@ -41,9 +45,15 @@ int openSocket(int portno) {
     
     if (bind(sockfd, (struct sockaddr *) &serv_addr,
     sizeof(serv_addr)) < 0) {
-	fprintf(stderr, "ERROR on binding");
+	fprintf(stderr, "Could not bind to port %d: %s", portno, strerror(errno));
+	return -1;
     }
-    listen(sockfd, 5);
+    
+    if (listen(sockfd, MAXSOCKET)==-1) {
+	fprintf(stderr, "Could not listen to port %d: %s", portno, strerror(errno));
+	return -1;
+    }
+    
     
     return (sockfd);
     
@@ -66,7 +76,7 @@ int acceptSocket(int sockfd) {
 	fprintf(stderr, "ERROR on accept");
     } else {
 	logabba(L_MIN, "Accepted connection");
-	sprintf(welcome, "Welcome to batman (REVISION)\n");
+	sprintf(welcome, "Welcome to batman (%s) on fd %d\n", REVISION, newsockfd);
 	write(newsockfd, welcome, strlen(welcome));
     }
     
@@ -76,27 +86,97 @@ int acceptSocket(int sockfd) {
     
 }
 
-void writePrompt(int fd)
-{
+static void writePrompt(int fd) {
     char prompt[]="> ";
     write(fd, "> ", strlen(prompt) );
+}
+
+void cmdHelp(int fd) {
+    
+    writeFd(fd, "Available commands:");
+    writeFd(fd, " bat: get battery state" );
+    writeFd(fd, " quit: close this connection");
+    
+}
+
+int cmdQuit(int fd, char *rest) {
+    writeFd(fd, "Have a nice day.");
+    return -1;
+}
+
+void cmdBat(int fd, char *rest) {
+    writeFd(fd, "Sorry, I cant fetch battery state yet");
+    
 }
 
 int readSocket(int fd) {
     
     char buffer[256];
+    char cmd[256];
     int n;
+    int ret=0;
     
     bzero(buffer, 256);
     n = read(fd, buffer, 255);
-    if (n < 0) logabba(L_MIN, "ERROR reading from socket");
-    printf("Here is the message: %s\n", buffer);
-    n = write(fd, "I got your message", 18);
-    if (n < 0) logabba(L_MIN, "ERROR writing to socket");
+    if (n < 0) {
+	logabba(L_MIN, "ERROR reading from socket");
+	return -1;
+    }
     
-    writePrompt(fd);
+    n = sscanf(buffer, "%s %s", cmd, buffer);
+    switch (n) {
+	case 0:
+	    writeFd(fd,"No command decoded");
+	    break;
+	case 1:
+	    writeFd(fd, "your command  = <%s>", cmd);
+	    break;
+	case 2:
+	    writeFd(fd, "your command = <%s>, buffer=<%s>, n = %d\n", cmd, buffer, n);
+	    break;
+	default:
+	    writeFd(fd, "Could not decode your message: %s", strerror(errno));
+    }
     
-    return 0;
+    if (n<=1) buffer[0] = 0;
+    
+    if (strcmp(cmd, "help")==0) {
+	cmdHelp(fd);
+    } else if (strcmp(cmd, "quit")==0) {
+	ret = cmdQuit(fd, buffer);
+    } else if (strcmp(cmd, "bat")==0) {
+	cmdBat(fd, buffer);
+    } else {
+	writeFd(fd, "I got your message but didn't understand it: <%s>", cmd);
+	writeFd(fd, "You could try help");
+    }
+    
+    if (ret!=-1) writePrompt(fd);
+    
+    return ret;
+    
+}
+
+int writeFd(int fd, const char *msg, ...) {
+    
+    int cnt;
+    static char mymsg[1024];
+    memset(mymsg, 0, sizeof(mymsg));
+    
+    va_list v;
+    
+    va_start(v, msg);
+    
+    vsprintf(mymsg, msg, v);
+    cnt = write(fd, mymsg, sizeof(mymsg));
+    if (cnt < 0) {
+	logabba(L_MIN, "ERROR writing to socket");
+    } else {
+	write(fd, "\n", 1);
+    }
+    va_end(v);
+    
+    return cnt;
     
 }
 
