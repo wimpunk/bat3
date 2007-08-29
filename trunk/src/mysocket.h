@@ -7,8 +7,16 @@
  *
  * */
 
+#define MAXSOCKET 5
+
+typedef enum {
+    MYSOCK_OKAY,
+    MYSOCK_QUIT,
+    MYSOCK_END
+} mysock_t;
+
 int openSocket(int portno);
 int acceptSocket(int socketfd);
-int readSocket(int fd);
+mysock_t readSocket(int fd);
+onoff_t getBatRun();
 
-#define MAXSOCKET 5

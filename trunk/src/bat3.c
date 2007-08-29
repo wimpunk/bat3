@@ -145,7 +145,7 @@ static void usage(char *progname) {
 
 
 int doRondje(int fd, struct bat3 *sample, int current, FILE *logfile) {
-    struct bat3 state = *sample, prevstate;
+    struct bat3 state = *sample; // , prevstate;
     int cnt;
     char msg[56];
     // while ((cntsamples<samples) || (samples == -1))	{
@@ -173,7 +173,7 @@ int doRondje(int fd, struct bat3 *sample, int current, FILE *logfile) {
     
     cnt=0;
     
-    prevstate = state;
+    //    prevstate = state;
     while (!getsample(fd, &state, logfile) && cnt<MAX_RETRIES) {
 	cnt++;
     }
@@ -183,7 +183,7 @@ int doRondje(int fd, struct bat3 *sample, int current, FILE *logfile) {
 	return -1;
     }
     
-    
+    *sample = state;
     
     // usleep(100);
     
@@ -304,8 +304,9 @@ int main(int argc, char *argv[]) {
     int connections[MAXSOCKET];
     int cnt_connect=0;
     int cnt;
-  
-    while (((cntsamples<samples) || (samples == -1)))	{
+    int sw_continue = 1;
+    
+    while (((cntsamples<samples) || (samples == -1)) && (sw_continue))	{
 	
 	FD_ZERO( &rfds );
 	FD_SET( fd, &rfds );
@@ -317,19 +318,17 @@ int main(int argc, char *argv[]) {
 	
 	tv.tv_sec  = FlushTime/1000000;
 	tv.tv_usec = FlushTime%1000000;
-	
-	
+		
 	if (select( FD_SETSIZE, &rfds, NULL, NULL, &tv ) < 0) {
-	    fprintf(stderr, "Select error: %s", strerror(errno));
+	    fprintf(stderr, "Select error: %s\n", strerror(errno));
 	    return -1;
 	}
 	// while ( select( FD_SETSIZE, &rfds, NULL, NULL, NULL ) > 0 ) {
 	prevstate = state;
-	setBatState(&prevstate);
-	
+	setBatState(&state);
 	
 	if (FD_ISSET(socketfd, &rfds)) {
-	    printf("socketfd\n");
+	    //printf("socketfd\n");
 	    // iemand klopt aant
 	    logabba(L_MIN, "Iemand klopt");
 	    connections[cnt_connect++]=acceptSocket(socketfd);
@@ -351,7 +350,7 @@ int main(int argc, char *argv[]) {
 		logabba(L_MIN, "Running on %s", state.batRun==ON?"batteries":"current" );
 	    }
 	    
-	    logabba(L_MIN, "Loading sample " );
+	    // logabba(L_MIN, "Loading sample " );
 	    
 	    tv.tv_sec  = FlushTime/1000000;
 	    tv.tv_usec = FlushTime%1000000;
@@ -359,37 +358,46 @@ int main(int argc, char *argv[]) {
 	}
 	
 	for (cnt=0; cnt<cnt_connect; cnt++) {
+	    
 	    if (FD_ISSET(connections[cnt], &rfds)) {
-		printf("connection %d\n",cnt);
-		if (readSocket(connections[cnt])== -1) {
-		    int i;
-		    
-		    close(connections[cnt]);
-		    
-		    for (i=cnt+1; i<cnt_connect; i++) {
-			connections[i-1] = connections[i];
-		    }
-		    
-		    cnt_connect--;
-		    cnt--;
-		    
+		
+		int i;
+		mysock_t sockret;
+		
+		//printf("connection %d\n", cnt);
+		sockret = readSocket(connections[cnt]);
+		switch (sockret) {
+		    case MYSOCK_QUIT:
+			close(connections[cnt]);
+			
+			for (i=cnt+1; i<cnt_connect; i++) {
+			    connections[i-1] = connections[i];
+			}
+			
+			cnt_connect--;
+			cnt--;
+			break;
+			
+		    case MYSOCK_END:
+			for (i=0; i<cnt_connect; i++) close(connections[cnt]);
+			sw_continue = 0;
+			break;
+			
+		    case MYSOCK_OKAY:
+			break;
+			
 		}
+		
+		
 	    }
 	}
-	
-	FD_SET( fd, &rfds );
-	FD_SET( socketfd, &rfds );
-	
     }
     
     close(fd);
+    close(socketfd);
     
     return 0;
     
 }
 
-
-
-
-
-// vim:set autoindent
+// vim:set autoindent:

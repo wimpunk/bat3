@@ -18,8 +18,6 @@
 #include <stdarg.h>
 #include <errno.h>
 
-
-
 #include "bat3.h"
 #include "mysocket.h"
 
@@ -63,11 +61,8 @@ int openSocket(int portno) {
 int acceptSocket(int sockfd) {
     
     int newsockfd;
-    //  struct sockaddr_in serv_addr,
     struct sockaddr_in cli_addr;
     socklen_t clilen;
-    char welcome[256];
-    // int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
     
     clilen = sizeof(cli_addr);
     newsockfd = accept(sockfd,  (struct sockaddr *) &cli_addr, &clilen);
@@ -76,8 +71,7 @@ int acceptSocket(int sockfd) {
 	fprintf(stderr, "ERROR on accept");
     } else {
 	logabba(L_MIN, "Accepted connection");
-	sprintf(welcome, "Welcome to batman (%s) on fd %d\n", REVISION, newsockfd);
-	write(newsockfd, welcome, strlen(welcome));
+	writeFd(newsockfd, "Welcome to bat3 ($Rev$) on fd %d", newsockfd);
     }
     
     writePrompt(newsockfd);
@@ -99,22 +93,29 @@ void cmdHelp(int fd) {
     
 }
 
-int cmdQuit(int fd, char *rest) {
+mysock_t cmdQuit(int fd, char *rest) {
     writeFd(fd, "Have a nice day.");
-    return -1;
+    return MYSOCK_QUIT;
 }
 
-void cmdBat(int fd, char *rest) {
-    writeFd(fd, "Sorry, I cant fetch battery state yet");
+mysock_t cmdEnd(int fd, char *rest) {
+    writeFd(fd, "I'll stop working");
+    return MYSOCK_END;
+}
+
+mysock_t cmdBat(int fd, char *rest) {
+
+    writeFd(fd, "BatRun: %s", print_onoff(getBatRun()));
+    return MYSOCK_OKAY;
     
 }
 
-int readSocket(int fd) {
+mysock_t readSocket(int fd) {
     
     char buffer[256];
     char cmd[256];
     int n;
-    int ret=0;
+    mysock_t ret=MYSOCK_OKAY;
     
     bzero(buffer, 256);
     n = read(fd, buffer, 255);
@@ -129,10 +130,10 @@ int readSocket(int fd) {
 	    writeFd(fd,"No command decoded");
 	    break;
 	case 1:
-	    writeFd(fd, "your command  = <%s>", cmd);
+	    // writeFd(fd, "your command  = <%s>", cmd);
 	    break;
 	case 2:
-	    writeFd(fd, "your command = <%s>, buffer=<%s>, n = %d\n", cmd, buffer, n);
+	    // writeFd(fd, "your command = <%s>, buffer=<%s>, n = %d\n", cmd, buffer, n);
 	    break;
 	default:
 	    writeFd(fd, "Could not decode your message: %s", strerror(errno));
@@ -146,6 +147,8 @@ int readSocket(int fd) {
 	ret = cmdQuit(fd, buffer);
     } else if (strcmp(cmd, "bat")==0) {
 	cmdBat(fd, buffer);
+    } else if (strcmp(cmd, "end")==0) {
+	ret = cmdEnd(fd, buffer);
     } else {
 	writeFd(fd, "I got your message but didn't understand it: <%s>", cmd);
 	writeFd(fd, "You could try help");
