@@ -1,9 +1,9 @@
 /*
- * $Id: convert.c 55 2007-08-20 15:42:15Z wimpunk $
+ * $Id$
  *
- * $LastChangedDate: 2007-08-20 17:42:15 +0200 (Mon, 20 Aug 2007) $
- * $Rev: 55 $
- * $Author: wimpunk $
+ * $LastChangedDate$
+ * $Rev$
+ * $Author$
  *
  * */
 
@@ -51,6 +51,7 @@ int acceptSocket(int sockfd) {
     //  struct sockaddr_in serv_addr,
     struct sockaddr_in cli_addr;
     socklen_t clilen;
+    char welcome[256];
     // int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
     
     clilen = sizeof(cli_addr);
@@ -60,10 +61,12 @@ int acceptSocket(int sockfd) {
 	fprintf(stderr, "ERROR on accept");
     } else {
 	logabba(L_MIN, "Accepted connection");
-	write(newsockfd, "Yo de mannen", strlen("Yo de mannen"));
+	sprintf(welcome, "Welcome to batman (%s)\n", $REV$);
+	write(newsockfd, welcome, strlen(welcomde));
     }
     
     return newsockfd;
+    
 }
 
 
@@ -81,3 +84,4 @@ int readSocket(int fd) {
     return 0;
     
 }
+
