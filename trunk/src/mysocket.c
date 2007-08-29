@@ -7,6 +7,8 @@
  *
  * */
 
+#define REVISION "$Rev$"
+
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
@@ -16,6 +18,9 @@
 
 #include "bat3.h"
 #include "mysocket.h"
+
+void writePrompt(int fd);
+int  readSocket (int fd);
 
 int openSocket(int portno) {
     
@@ -61,16 +66,24 @@ int acceptSocket(int sockfd) {
 	fprintf(stderr, "ERROR on accept");
     } else {
 	logabba(L_MIN, "Accepted connection");
-	sprintf(welcome, "Welcome to batman (%s)\n", $REV$);
-	write(newsockfd, welcome, strlen(welcomde));
+	sprintf(welcome, "Welcome to batman (REVISION)\n");
+	write(newsockfd, welcome, strlen(welcome));
     }
+    
+    writePrompt(newsockfd);
     
     return newsockfd;
     
 }
 
+void writePrompt(int fd)
+{
+    char prompt[]="> ";
+    write(fd, "> ", strlen(prompt) );
+}
 
 int readSocket(int fd) {
+    
     char buffer[256];
     int n;
     
@@ -80,6 +93,8 @@ int readSocket(int fd) {
     printf("Here is the message: %s\n", buffer);
     n = write(fd, "I got your message", 18);
     if (n < 0) logabba(L_MIN, "ERROR writing to socket");
+    
+    writePrompt(fd);
     
     return 0;
     
