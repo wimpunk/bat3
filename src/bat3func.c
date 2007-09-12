@@ -179,6 +179,11 @@ void setBatState(struct bat3* newState)
 
 onoff_t getBatRun()
 {
+    
     return curState.batRun;
 }
 
+int getBatI()
+{
+    return curState.bat_i;
+}

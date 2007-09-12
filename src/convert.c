@@ -69,6 +69,7 @@ float tempC(short int tmp) {
 }
 
 static void print_BAT3reply(FILE *fd, struct BAT3reply* reply) {
+    
     if (fd != NULL){
 	
 	fprintf(fd, "->print_bat3reply\n");
@@ -98,6 +99,7 @@ static void print_BAT3reply(FILE *fd, struct BAT3reply* reply) {
 }
 
 static void print_bat3(FILE *fd, struct bat3* mybat3) {
+    
     if (fd!=NULL) {
 	fprintf(fd, "->print_bat3\n");
 	fprintf(fd, "input supply voltage     = %04X (%3.2fV)\n",  mybat3->inp_u, 0.70/1000 * (mybat3->inp_u)); //

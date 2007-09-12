@@ -94,6 +94,7 @@ static int getsample(int fd, struct bat3 *sample, FILE *logfile) {
 	    continue;
 	}
 	
+	// if (logfile == NULL ) logabba(L_MIN, "Logfile == NULL");
 	if (decodemsg(msg, cnt, &temp, logfile)!=0) {
 	    logabba(L_MIN, "Could not decodemsg, error=%d", error);
 	    error++;
@@ -123,7 +124,7 @@ static void usage(char *progname) {
     printf("      -a address: address to use while reading/writing, default %i\n", DEFAULT_ADDRESS);
     printf("      -c current: current to load (mA), default %i\n", DEFAULT_CURRENT);
     printf("      -d device: device to use, default %s\n", BAT3DEV );
-    printf("      -f logfile: file to dump arrays to, default /dev/null");
+    printf("      -f logfile: file to dump arrays to, default /dev/null\n   ");
     printf("      -l loglevel: loglevel to use, default %i\n", DEFAULT_LOGLEVEL );
     printf("      -p portnr: portnumber to listen to, default %i\n", DEFAULT_PORT);
     printf("      -r : read from [address]\n");
@@ -154,7 +155,6 @@ int doRondje(int fd, struct bat3 *sample, int current, FILE *logfile) {
     // if ((cntsamples == 0))
     state.softJP3 = ON;
     
-    
     // Even when running on batteries, we have to kietel the opamp
     if (state.batRun == ON) {
 	state.led = OFF;
@@ -164,7 +164,6 @@ int doRondje(int fd, struct bat3 *sample, int current, FILE *logfile) {
 	doload(&state, current);
 	logabba(L_MAX, "Switching led to %s", print_onoff(state.led));
     }
-    
     
     if ((cnt = encodemsg(msg, sizeof(msg), &state))) {
 	logabba(L_INFO, "Writing msg");
@@ -280,7 +279,7 @@ int main(int argc, char *argv[]) {
 	return 0;
     }
     
-    fprintf(stdout, "opening port returned %d", socketfd);
+    // fprintf(stdout, "opening port returned %d", socketfd);
     
     
     if ((samples<-1)) samples = DEFAULT_SAMPLES;
@@ -330,9 +329,12 @@ int main(int argc, char *argv[]) {
 	if (FD_ISSET(socketfd, &rfds)) {
 	    //printf("socketfd\n");
 	    // iemand klopt aant
-	    logabba(L_MIN, "Iemand klopt");
+	    logabba(L_MIN, "Someone knocks");
 	    connections[cnt_connect++]=acceptSocket(socketfd);
-	    if (connections[cnt_connect-1] == -1) cnt_connect--;
+	    if (connections[cnt_connect-1] == -1) {
+		cnt_connect--;
+		logabba(L_MIN, "but it was a little child");
+	    }
 	}
 	
 	if (FD_ISSET(fd, &rfds)) {

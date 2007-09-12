@@ -19,6 +19,7 @@
 #include <errno.h>
 
 #include "bat3.h"
+#include "bat3func.h"
 #include "mysocket.h"
 
 static void writePrompt(int fd);
@@ -104,8 +105,18 @@ mysock_t cmdEnd(int fd, char *rest) {
 }
 
 mysock_t cmdBat(int fd, char *rest) {
+    
+    char *val;
 
-    writeFd(fd, "BatRun: %s", print_onoff(getBatRun()));
+    if (getBatI() == 0x01FF) {
+	val = "NONE";
+    } else {
+	val = print_onoff(getBatRun());
+    }
+	
+    writeFd(fd, "BatRun: %s", val);
+    writeFd(fd, "BatRun: %04X", getBatI());
+    
     return MYSOCK_OKAY;
     
 }
@@ -171,7 +182,7 @@ int writeFd(int fd, const char *msg, ...) {
     va_start(v, msg);
     
     vsprintf(mymsg, msg, v);
-    cnt = write(fd, mymsg, sizeof(mymsg));
+    cnt = write(fd, mymsg, strlen(mymsg));
     if (cnt < 0) {
 	logabba(L_MIN, "ERROR writing to socket");
     } else {
