@@ -303,11 +303,7 @@ int main(int argc, char *argv[]) {
     int		    FlushTime = 20 * 1000; // 20 characters @ 9600bps
     fd_set	    rfds;
     struct timeval  tv;
-    
-    // int connections[MAXSOCKET];
-    // int cnt_connect=0;
-    // int cnt;
-    int sw_continue = 1;
+    int		    sw_continue = 1;
     
     while (((cntsamples<samples) || (samples == -1)) && (sw_continue))	{
 	
@@ -336,8 +332,6 @@ int main(int argc, char *argv[]) {
 	    if (state.batRun != prevstate.batRun) {
 		logabba(L_MIN, "Running on %s", state.batRun==ON?"batteries":"current" );
 	    }
-	    
-	    // logabba(L_MIN, "Loading sample " );
 	    
 	    tv.tv_sec  = FlushTime/1000000;
 	    tv.tv_usec = FlushTime%1000000;
