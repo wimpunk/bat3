@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <errno.h>
+#include <time.h>
 
 #include "bat3.h"
 #include "bat3func.h"
@@ -27,11 +28,53 @@
 static int writePrompt(int fd);
 static int writeFd(int fd, const char *msg, ...);
 
+static int portno=0;
+
 static int cnt_connect=0;	// number of connected clients
 static int sfd_connect[MAXSFD];	// list of the socket file discriptors of the
-//static int sockfd=-1;	    // currently socketfd is passed by the main function
-// connected clients
-// TODO: should be replaced by a linked list
+static int sockfd=-1;
+static time_t lasttry=0;
+int closeFd(int fd) ;
+
+
+void setPortno(int no) {
+    portno=no;
+}
+
+static int openMySocket(int portno) {
+    
+    int sockfd;
+    
+    struct sockaddr_in serv_addr;
+    
+    
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) {
+	fprintf(stderr, "ERROR opening socket");
+    }
+    memset((char *) &serv_addr, 0, sizeof(serv_addr));
+    
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    serv_addr.sin_port = htons(portno);
+    
+    if (bind(sockfd, (struct sockaddr *) &serv_addr,
+    sizeof(serv_addr)) < 0) {
+	logabba(L_MIN, "Could not bind to port %d: %s", portno, strerror(errno));
+	shutdown(sockfd, SHUT_RDWR);
+	return -1;
+    }
+    
+    if (listen(sockfd, MAXSOCKET)==-1) {
+	logabba(L_MIN, "Could not listen to port %d: %s", portno, strerror(errno));
+	shutdown(sockfd, SHUT_RDWR);
+	return -1;
+    }
+    
+    
+    return (sockfd);
+    
+}
 
 /* AcceptSocket: accepts the connection
  returns filedescriptor to the socket */
@@ -161,9 +204,8 @@ mysock_t readSocket(int fd) {
 
 /*
  processMySocket: verwerken van de netwerk connecties
- TODO: socketfd should not be an argument.
  */
-mysock_t processMySocket(int socketfd) {
+mysock_t processMySocket() {
     
     fd_set	    rfds;
     struct timeval  tv;
@@ -172,16 +214,30 @@ mysock_t processMySocket(int socketfd) {
     
     int cnt;
     
+    if (sockfd==-1) {
+	
+	if ((time(NULL)-lasttry) < 30) {
+	    return -1;
+	} else {
+	    time(&lasttry);
+	}
+	
+	if ((sockfd =  openMySocket(portno)) == -1) {
+	    logabba(L_MIN, "Could not open port %i\n", portno);
+	    return MYSOCK_OKAY;
+	}
+    }
+    
     FD_ZERO(&rfds);
     // check if someone wants to connect
-    FD_SET(socketfd, &rfds);
+    FD_SET(sockfd, &rfds);
     
     // Set the connected sockets
     for (cnt=0; cnt<cnt_connect; cnt++) {
 	FD_SET(sfd_connect[cnt], &rfds);
     }
     // check if someone wants to connect
-    FD_SET(socketfd, &rfds);
+    FD_SET(sockfd, &rfds);
     
     // set the flushtime
     tv.tv_sec  = FlushTime/1000000;
@@ -192,16 +248,16 @@ mysock_t processMySocket(int socketfd) {
 	return -1;
     }
     
-    if (FD_ISSET(socketfd, &rfds)) {
+    if (FD_ISSET(sockfd, &rfds)) {
 	logabba(L_MIN, "Someone knocks");
 	if (cnt_connect >= MAXSFD) {
 	    int tempfd;
 	    logabba(L_MIN, "To much connected clients");
-	    tempfd = acceptSocket(socketfd);
+	    tempfd = acceptSocket(sockfd);
 	    writeFd(tempfd, "To much connected clients");
 	    close(tempfd);
 	} else {
-	    sfd_connect[cnt_connect++]=acceptSocket(socketfd);
+	    sfd_connect[cnt_connect++]=acceptSocket(sockfd);
 	}
 	if (sfd_connect[cnt_connect-1] == -1) {
 	    cnt_connect--;
@@ -225,6 +281,7 @@ mysock_t processMySocket(int socketfd) {
 		    
 		case MYSOCK_END:
 		    // for (i=0; i<cnt_connect; i++) close(sfd_connect[cnt]);
+		    // TODO: close all connections
 		    return MYSOCK_END;
 		    break;
 		    
@@ -241,42 +298,8 @@ mysock_t processMySocket(int socketfd) {
 }
 
 
-int openMySocket(int portno) {
-    
-    int sockfd;
-    
-    struct sockaddr_in serv_addr;
-    
-    
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0) {
-	fprintf(stderr, "ERROR opening socket");
-    }
-    memset((char *) &serv_addr, 0, sizeof(serv_addr));
-    
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = INADDR_ANY;
-    serv_addr.sin_port = htons(portno);
-    
-    if (bind(sockfd, (struct sockaddr *) &serv_addr,
-    sizeof(serv_addr)) < 0) {
-	fprintf(stderr, "Could not bind to port %d: %s", portno, strerror(errno));
-	return -1;
-    }
-    
-    if (listen(sockfd, MAXSOCKET)==-1) {
-	fprintf(stderr, "Could not listen to port %d: %s", portno, strerror(errno));
-	return -1;
-    }
-    
-    
-    return (sockfd);
-    
-}
 
-int closeMySocket(int sockfd) {
-    return close(sockfd);
-}
+
 
 static int writePrompt(int fd) {
     
@@ -302,7 +325,14 @@ int closeFd(int fd) {
     return 0;
     
 }
-
+void closeMySocket(int sockfd) {
+    
+    int cnt;
+    
+    for (cnt=cnt_connect; cnt>0; cnt--)	closeFd(sfd_connect[cnt]);
+    
+    close(sockfd);
+}
 int writeFd(int fd, const char *msg, ...) {
     
     int cnt;

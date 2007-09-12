@@ -10,6 +10,10 @@
 #include <signal.h>
 #include <errno.h>
 
+#include <sys/time.h>
+#include <time.h>
+
+
 /*
  * $Id$
  *
@@ -90,7 +94,7 @@ static int getsample(int fd, struct bat3 *sample, FILE *logfile) {
     while (error<MAX_RETRIES && retry) {
 	
 	if (!(cnt=readStream(fd, msg, sizeof(msg)))) {
-	    logabba(L_MIN, "Could not readStream, error=%d, cnt=%d", error, cnt);
+	    logabba(L_NOTICE, "Could not readStream, error=%d, cnt=%d", error, cnt);
 	    error++;
 	    continue;
 	}
@@ -146,8 +150,9 @@ static void usage(char *progname) {
  */
 
 
-int doRondje(int fd, struct bat3 *sample, int current, FILE *logfile) {
-    struct bat3 state = *sample; // , prevstate;
+int doRound(int fd, struct bat3 *sample, int current, FILE *logfile) {
+    
+    struct bat3 state = *sample;
     int cnt;
     char msg[56];
     // while ((cntsamples<samples) || (samples == -1))	{
@@ -156,6 +161,7 @@ int doRondje(int fd, struct bat3 *sample, int current, FILE *logfile) {
     // if ((cntsamples == 0))
     state.softJP3 = ON;
     
+    logabba(L_NOTICE, "Original led: %s", print_onoff(state.led));
     // Even when running on batteries, we have to kietel the opamp
     if (state.batRun == ON) {
 	state.led = OFF;
@@ -165,7 +171,7 @@ int doRondje(int fd, struct bat3 *sample, int current, FILE *logfile) {
 	doload(&state, current);
 	logabba(L_MAX, "Switching led to %s", print_onoff(state.led));
     }
-    
+    logabba(L_NOTICE, "will encode led: %s", print_onoff(state.led));
     if ((cnt = encodemsg(msg, sizeof(msg), &state))) {
 	logabba(L_INFO, "Writing msg");
 	writeStream(fd, msg, cnt);
@@ -182,15 +188,15 @@ int doRondje(int fd, struct bat3 *sample, int current, FILE *logfile) {
 	logabba(L_MIN, "Did not get a sample even after retrying %d times", cnt);
 	return -1;
     }
-    
+        logabba(L_NOTICE, "got state led: %s", print_onoff(state.led));
     *sample = state;
+    logabba(L_NOTICE, "got sample led: %s", print_onoff(sample->led));
     
     // usleep(100);
     
     return 0;
     
 }
-
 
 int main(int argc, char *argv[]) {
     int c, fd;
@@ -275,11 +281,7 @@ int main(int argc, char *argv[]) {
 	return 0;
     }
     
-    // TODO: should be part of mysocket fucntion.
-    if ((socketfd =  openMySocket(portno)) == -1) {
-	logabba(L_MIN, "Could not open port %i\n", portno);
-	return 0;
-    }
+    setPortno(portno);
     
     // fprintf(stdout, "opening port returned %d", socketfd);
     
@@ -304,6 +306,7 @@ int main(int argc, char *argv[]) {
     fd_set	    rfds;
     struct timeval  tv;
     int		    sw_continue = 1;
+    struct timeval  now, lastrun;
     
     while (((cntsamples<samples) || (samples == -1)) && (sw_continue))	{
 	
@@ -312,6 +315,8 @@ int main(int argc, char *argv[]) {
 	
 	tv.tv_sec  = FlushTime/1000000;
 	tv.tv_usec = FlushTime%1000000;
+	
+	int val;
 	
 	if (select( FD_SETSIZE, &rfds, NULL, NULL, &tv ) < 0) {
 	    fprintf(stderr, "Select error: %s\n", strerror(errno));
@@ -322,8 +327,9 @@ int main(int argc, char *argv[]) {
 	    
 	    if (read) doread(&state, address);
 	    if (write) dowrite(&state, address, value);
+	    gettimeofday(&lastrun, NULL);
 	    
-	    doRondje(fd, &state, current, logfile);
+	    doRound(fd, &state, current, logfile);
 	    cntsamples++;
 	    if (cntsamples==3 && read) {
 		logabba(L_MIN, "Reading from address %i: %04X=%04X", address, state.ee_addr, state.ee_data);
@@ -347,6 +353,16 @@ int main(int argc, char *argv[]) {
 	    sw_continue = MYSOCK_END != processMySocket(socketfd);
 	}
 	
+	gettimeofday(&now, NULL);
+	
+	// logabba(L_MIN, "Would sleep during %d usec",
+	val = 25 * 1000 - ( now.tv_sec - lastrun.tv_sec ) * 1000 * 1000 -  ( now.tv_usec - lastrun.tv_usec );
+	if (val <= 0 ) val = 0;
+	usleep(val);
+	// logabba(L_MIN, "  diff sec: %d", now.tv_sec  - lastrun.tv_sec);
+	// logabba(L_MIN, " udiff sec: %d", now.tv_usec - lastrun.tv_usec);
+	// usleep(100 * 1000);
+	// usleep (20000);
     }
     
     close(fd);
