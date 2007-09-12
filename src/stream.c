@@ -63,13 +63,10 @@ int writeStream(int fd, unsigned char *msg, int len) {
     char converted[1024];
     int strpos;
     unsigned char crc;
-    // char b;
     
     mymsg[pos++]=STX;
     for (cnt=0; cnt<len; cnt++) {
-	
 	if (msg[cnt] == 0x7E || msg[cnt] == 0x7D || msg[cnt] == 0x7F || msg[cnt] == 0x11 || msg[cnt] == 0x13) {
-	    // logabba(L_MIN, "writeStream changed one");
 	    mymsg[pos++] = ESC;
 	    mymsg[pos++] = msg[cnt] ^ (1<<5);
 	} else {
@@ -79,7 +76,7 @@ int writeStream(int fd, unsigned char *msg, int len) {
     
     crc = calcCrc(msg, len);
     if (crc == 0x7E || crc == 0x7D || crc == 0x7F || crc == 0x11 || crc == 0x13) {
-	// logabba(L_MIN, "writeStream changed crc");
+	logabba(L_NOTICE, "writeStream changed crc");
 	mymsg[pos++] = ESC;
 	mymsg[pos++] = crc ^ (1<<5);
     }
@@ -115,9 +112,7 @@ int readStream(int fd, unsigned char *msg, int max) {
     char           converted[1024];
     
     int FlushTime = 1000 * 1000;
-    // int crc=0;
     int lastesc=-1;
-    // unsigned int fifthbyte=0;
     
     FD_ZERO( &rfds );
     FD_SET( fd, &rfds );
@@ -137,8 +132,15 @@ int readStream(int fd, unsigned char *msg, int max) {
 		break;
 		
 	    case ETX:
-		if (state == STATE_STARTED) {
-		    state = STATE_ENDED;
+		if ((state == STATE_STARTED)){
+		    if (pos == 18) {
+			// workaround for CRC == ETX
+			// When CRC==ETX it's not escaped.
+			logabba(L_INFO, "I got a CRC == ETX");
+			msg[pos++] = rxchar;
+		    } else {
+			state = STATE_ENDED;
+		    }
 		}
 		break;
 		
@@ -172,9 +174,11 @@ int readStream(int fd, unsigned char *msg, int max) {
 	logabba(L_NOTICE, "Received %d bytes (calcCrc=%04X,crc=%04X): %s ",
 	pos, calcCrc(msg, pos-1), msg[pos-1], converted);
 	
-	// TODO if (calcCrc(msg, pos-1) == msg[pos-1])
-	// CRC is calculated on the original message!
-	// if (pos==19) return pos-1; //don't send the crc
+	if (calcCrc(msg, pos-1) != msg[pos-1]) {
+	    logabba(L_MIN, "Got a wrong CRC!");
+	    return 0;
+	}
+	
 	return pos-1; //don't send the crc
 	
     }
