@@ -14,3 +14,4 @@ void dowrite(struct bat3* state, int address, int value);
 
 void setBatState(struct bat3* newState);
 int getBatI();
+onoff_t getBatRun();

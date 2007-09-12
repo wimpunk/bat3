@@ -7,6 +7,9 @@
  *
  * */
 
+
+#ifndef MYSOCKET_H
+#define MYSOCKET_H
 #define MAXSOCKET 5
 
 typedef enum {
@@ -15,8 +18,10 @@ typedef enum {
     MYSOCK_END
 } mysock_t;
 
-int openSocket(int portno);
-int acceptSocket(int socketfd);
-mysock_t readSocket(int fd);
-onoff_t getBatRun();
-
+int openMySocket(int portno);
+// int acceptSocket(int socketfd);
+mysock_t processMySocket(int socketfd);
+// mysock_t readSocket(int fd);
+// onoff_t getBatRun();
+int closeMySocket(int sockfd);
+#endif
