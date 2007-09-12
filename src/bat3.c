@@ -7,6 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#include <signal.h>
 #include <errno.h>
 
 /*
@@ -274,7 +275,8 @@ int main(int argc, char *argv[]) {
 	return 0;
     }
     
-    if ((socketfd =  openSocket(portno)) == -1) {
+    // TODO: should be part of mysocket fucntion.
+    if ((socketfd =  openMySocket(portno)) == -1) {
 	logabba(L_MIN, "Could not open port %i\n", portno);
 	return 0;
     }
@@ -295,46 +297,29 @@ int main(int argc, char *argv[]) {
     }
     
     cntsamples=0;
+    // ignoring broken pipes
+    signal(SIGPIPE, SIG_IGN);
     
-    int FlushTime = 1000 * 1000;
-    fd_set         rfds;
-    struct timeval tv;
+    int		    FlushTime = 20 * 1000; // 20 characters @ 9600bps
+    fd_set	    rfds;
+    struct timeval  tv;
     
-    int connections[MAXSOCKET];
-    int cnt_connect=0;
-    int cnt;
+    // int connections[MAXSOCKET];
+    // int cnt_connect=0;
+    // int cnt;
     int sw_continue = 1;
     
     while (((cntsamples<samples) || (samples == -1)) && (sw_continue))	{
 	
 	FD_ZERO( &rfds );
 	FD_SET( fd, &rfds );
-	FD_SET( socketfd, &rfds );
-	
-	for (cnt=0; cnt<cnt_connect; cnt++) {
-	    FD_SET(connections[cnt], &rfds);
-	}
 	
 	tv.tv_sec  = FlushTime/1000000;
 	tv.tv_usec = FlushTime%1000000;
-		
+	
 	if (select( FD_SETSIZE, &rfds, NULL, NULL, &tv ) < 0) {
 	    fprintf(stderr, "Select error: %s\n", strerror(errno));
 	    return -1;
-	}
-	// while ( select( FD_SETSIZE, &rfds, NULL, NULL, NULL ) > 0 ) {
-	prevstate = state;
-	setBatState(&state);
-	
-	if (FD_ISSET(socketfd, &rfds)) {
-	    //printf("socketfd\n");
-	    // iemand klopt aant
-	    logabba(L_MIN, "Someone knocks");
-	    connections[cnt_connect++]=acceptSocket(socketfd);
-	    if (connections[cnt_connect-1] == -1) {
-		cnt_connect--;
-		logabba(L_MIN, "but it was a little child");
-	    }
 	}
 	
 	if (FD_ISSET(fd, &rfds)) {
@@ -359,44 +344,19 @@ int main(int argc, char *argv[]) {
 	    
 	}
 	
-	for (cnt=0; cnt<cnt_connect; cnt++) {
-	    
-	    if (FD_ISSET(connections[cnt], &rfds)) {
-		
-		int i;
-		mysock_t sockret;
-		
-		//printf("connection %d\n", cnt);
-		sockret = readSocket(connections[cnt]);
-		switch (sockret) {
-		    case MYSOCK_QUIT:
-			close(connections[cnt]);
-			
-			for (i=cnt+1; i<cnt_connect; i++) {
-			    connections[i-1] = connections[i];
-			}
-			
-			cnt_connect--;
-			cnt--;
-			break;
-			
-		    case MYSOCK_END:
-			for (i=0; i<cnt_connect; i++) close(connections[cnt]);
-			sw_continue = 0;
-			break;
-			
-		    case MYSOCK_OKAY:
-			break;
-			
-		}
-		
-		
-	    }
+	
+	prevstate = state;
+	setBatState(&state);
+	
+	// Processing socket connections
+	if (sw_continue) {
+	    sw_continue = MYSOCK_END != processMySocket(socketfd);
 	}
+	
     }
     
     close(fd);
-    close(socketfd);
+    closeMySocket(socketfd);
     
     return 0;
     
