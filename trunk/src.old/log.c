@@ -33,9 +33,9 @@ static char progid[50] = "NIET GEGEVEN";
 // WARNING!!!  Do not underestimate the length of possible logmessages.  Extreme
 // known example = refresh from OT008, size approx. 8K!!!!
 
-static char milog_dd[9000];
+static char milog_dd[1024];
 
-
+/*
 void trace(const char *mess, ...)
 {
 	va_list v;
@@ -49,6 +49,7 @@ void trace(const char *mess, ...)
 	return;
 
 }
+*/
 
 
 void logabba(int prio, const char *mess, ...)
@@ -58,25 +59,13 @@ void logabba(int prio, const char *mess, ...)
 	va_start (v,mess);
 
 	if (prio <= loglevel) {
-		vsprintf(milog_dd,mess,v);
+		vsnprintf(milog_dd,1024,mess,v);
 		syslog(LOG_WARNING | facility, milog_dd);
-		// printf("syslog(LOG_WARNING | facility, milog_dd);\n");
-	// } else {
-		// printf("Not writing to syslog because prio %d > loglevel %d",prio,loglevel);
 	}
 
 	va_end(v);
 	return;
 }
-
-//#define LOG_EMERG       0       /* system is unusable */
-//#define LOG_ALERT       1       /* action must be taken immediately */
-//#define LOG_CRIT        2       /* critical conditions */
-//#define LOG_ERR         3       /* error conditions */
-//#define LOG_WARNING     4       /* warning conditions */
-//#define LOG_NOTICE      5       /* normal but signification condition */
-//#define LOG_INFO        6       /* informational */
-//#define LOG_DEBUG       7       /* debug-level messages */
 
 
 int getloglevel(void)
@@ -121,18 +110,10 @@ void setloglevel(int newlevel, char *progi)
 	}
 }
 
-
+/*
 void setfacility(int newfacility)
 {
 	facility = newfacility;
 }
+*/
 
-
-static char   date_time    [40];
-char *fmtt(void)
-{
-	time_t now= time (NULL);
-
-	strftime (date_time, sizeof(date_time), "%d.%m.%Y %H:%M:%S", localtime (&now));
-	return date_time;
-}
