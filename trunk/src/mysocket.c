@@ -59,12 +59,11 @@ static int acceptSocket(int sockfd) {
     
     if (newsockfd != -1) {
 	if (! writePrompt(newsockfd)) {
-	    logabba(L_MIN, "Writing prompt failed");
+	    // logabba(L_MAX, "Writing prompt failed");
 	    close(newsockfd);
 	    newsockfd = -1;
-	    
 	} else {
-	    logabba(L_MIN, "Wrote a correct prompt (I think)");
+	    // logabba(L_MAX, "Wrote a correct prompt (I think)");
 	}
     }
     
@@ -87,7 +86,7 @@ mysock_t cmdQuit(int fd, char *rest) {
 }
 
 mysock_t cmdEnd(int fd, char *rest) {
-    writeFd(fd, "I'll stop working");
+    writeFd(fd, "I'll stop working\n");
     return MYSOCK_END;
 }
 
@@ -101,15 +100,12 @@ mysock_t cmdBat(int fd, char *rest) {
 	val = print_onoff(getBatRun());
     }
     
-    writeFd(fd, "BatRun: %s", val);
-    writeFd(fd, "BatRun: %04X", getBatI());
+    writeFd(fd, "BatRun: %s\n", val);
+    // writeFd(fd, "BatRun: %04X\n", getBatI());
     
     return MYSOCK_OKAY;
     
 }
-
-
-
 
 mysock_t readSocket(int fd) {
     
@@ -124,13 +120,12 @@ mysock_t readSocket(int fd) {
 	logabba(L_MIN, "ERROR reading from socket");
 	return -1;
     }
-    logabba(L_MIN, "I received %d bytes", n);
     
     n = sscanf(buffer, "%s %s", cmd, buffer);
     logabba(L_MIN, "Scan returned %d", n);
     switch (n) {
 	case 0:
-	    writeFd(fd, "No command decoded");
+	    writeFd(fd, "No command decoded\n");
 	    break;
 	case 1:
 	    // writeFd(fd, "your command  = <%s>", cmd);
@@ -140,7 +135,7 @@ mysock_t readSocket(int fd) {
 	    break;
 	default:
 	    logabba(L_MIN, "Could not decode your message: %s", buffer);
-	    writeFd(fd, "Could not decode your message: %s", buffer);
+	    writeFd(fd, "Could not decode your message: [%s]\n", buffer);
     }
     
     if (n<=1) buffer[0] = 0;
@@ -154,8 +149,8 @@ mysock_t readSocket(int fd) {
     } else if (strcmp(cmd, "end")==0) {
 	ret = cmdEnd(fd, buffer);
     } else {
-	writeFd(fd, "I got your message but didn't understand it: <%s>", cmd);
-	writeFd(fd, "You could try help");
+	writeFd(fd, "I got your message but didn't understand it: <%s>\n", cmd);
+	writeFd(fd, "You could try help\n");
     }
     
     if (ret!=-1) writePrompt(fd);
@@ -166,7 +161,7 @@ mysock_t readSocket(int fd) {
 
 /*
  processMySocket: verwerken van de netwerk connecties
-TODO: socketfd should not be an argument.
+ TODO: socketfd should not be an argument.
  */
 mysock_t processMySocket(int socketfd) {
     
@@ -176,11 +171,11 @@ mysock_t processMySocket(int socketfd) {
     
     
     int cnt;
-
+    
     FD_ZERO(&rfds);
-     // check if someone wants to connect
+    // check if someone wants to connect
     FD_SET(socketfd, &rfds);
-
+    
     // Set the connected sockets
     for (cnt=0; cnt<cnt_connect; cnt++) {
 	FD_SET(sfd_connect[cnt], &rfds);
@@ -199,7 +194,15 @@ mysock_t processMySocket(int socketfd) {
     
     if (FD_ISSET(socketfd, &rfds)) {
 	logabba(L_MIN, "Someone knocks");
-	sfd_connect[cnt_connect++]=acceptSocket(socketfd);
+	if (cnt_connect >= MAXSFD) {
+	    int tempfd;
+	    logabba(L_MIN, "To much connected clients");
+	    tempfd = acceptSocket(socketfd);
+	    writeFd(tempfd, "To much connected clients");
+	    close(tempfd);
+	} else {
+	    sfd_connect[cnt_connect++]=acceptSocket(socketfd);
+	}
 	if (sfd_connect[cnt_connect-1] == -1) {
 	    cnt_connect--;
 	    logabba(L_MIN, "but it was a little child");
@@ -211,28 +214,18 @@ mysock_t processMySocket(int socketfd) {
 	
 	if (FD_ISSET(sfd_connect[cnt], &rfds)) {
 	    
-	    int i;
 	    mysock_t sockret;
 	    
 	    sockret = readSocket(sfd_connect[cnt]);
 	    switch (sockret) {
 		case MYSOCK_QUIT:
-		    
-		    // TODO: close should be done by an external function
-		    close(sfd_connect[cnt]);
-		    
-		    for (i=cnt+1; i<cnt_connect; i++) {
-			sfd_connect[i-1] = sfd_connect[i];
-		    }
-		    
-		    cnt_connect--;
+		    closeFd(sfd_connect[cnt]);
 		    cnt--;
 		    break;
 		    
 		case MYSOCK_END:
 		    // for (i=0; i<cnt_connect; i++) close(sfd_connect[cnt]);
 		    return MYSOCK_END;
-		    
 		    break;
 		    
 		case MYSOCK_OKAY:
@@ -290,6 +283,26 @@ static int writePrompt(int fd) {
     return writeFd(fd, "> ");
 }
 
+int closeFd(int fd) {
+    // TODO: should be done by a linked list
+    int cnt, i;
+    for (cnt=0; cnt<cnt_connect; cnt++)
+	if (sfd_connect[cnt] == fd) break;
+    
+    if (cnt>=cnt_connect) return 0;	// not found
+    
+    close(fd);
+    
+    for (i=cnt+1; i<cnt_connect; i++) {
+	sfd_connect[i-1] = sfd_connect[i];
+    }
+    
+    cnt_connect--;
+    
+    return 0;
+    
+}
+
 int writeFd(int fd, const char *msg, ...) {
     
     int cnt;
@@ -303,24 +316,16 @@ int writeFd(int fd, const char *msg, ...) {
     va_start(v, msg);
     
     vsprintf(mymsg, msg, v);
-    // mymsg[strlen(mymsg)] = '\n';
-    // cnt = write(fd, mymsg, strlen(mymsg));
-    // logabba(L_MIN, "Trying to send to socket: %s", mymsg);
-    // cnt = send(fd, mymsg, strlen(mymsg), MSG_DONTWAIT);
     cnt = send(fd, mymsg, strlen(mymsg), MSG_DONTWAIT);
-    logabba(L_MIN, "sending returned %d: %s", cnt, strerror(errno));
+    // logabba(L_MIN, "sending returned %d: %s", cnt, strerror(errno));
     if (cnt < 0) {
 	logabba(L_MIN, "ERROR sending to socket: %s", strerror(errno));
-	close(fd);
+	
+	closeFd(fd);
 	cnt=-1;
     } else if (cnt != strlen(mymsg)){
 	logabba(L_MIN, "Wrote a wrong number of bytes: %d != %d", cnt, strlen(mymsg) );
     }
-    /*
-     // write(fd, "\n", 1);
-     cnt = send(fd, "\n", 2, MSG_DONTWAIT);
-     logabba(L_MIN, "ERROR sending to socket(send returned %d): %s", cnt, strerror(errno));
-     */
     
     va_end(v);
     
