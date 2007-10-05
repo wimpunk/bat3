@@ -7,8 +7,6 @@
  *
  * */
 
-#define REVISION "$Rev$"
-
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
@@ -23,6 +21,7 @@
 #include "bat3func.h"
 #include "mysocket.h"
 // #include "cmdsocket.h"
+#include "config.h"
 
 #define MAXSFD 16
 static int writePrompt(int fd);
@@ -91,7 +90,7 @@ static int acceptSocket(int sockfd) {
 	fprintf(stderr, "ERROR on accept");
     } else {
 	logabba(L_MIN, "Accepted connection");
-	if (writeFd(newsockfd, "Welcome to bat3 ($Rev$) on fd %d\n", newsockfd)>0) {
+	if (writeFd(newsockfd, "Welcome to bat3 (%s) on fd %d\n", VERSION, newsockfd)>0) {
 	    logabba(L_MIN, "Wrote info message");
 	} else {
 	    logabba(L_MIN, "Failed writing info message");
@@ -165,7 +164,6 @@ mysock_t readSocket(int fd) {
     }
     
     n = sscanf(buffer, "%s %s", cmd, buffer);
-    logabba(L_MIN, "Scan returned %d", n);
     switch (n) {
 	case 0:
 	    writeFd(fd, "No command decoded\n");
