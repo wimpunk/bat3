@@ -13,6 +13,7 @@
 #include <sys/time.h>
 #include <time.h>
 
+#include "config.h"
 
 /*
  * $Id$
@@ -136,7 +137,7 @@ static void usage(char *progname) {
     printf("      -s samples: maxsamples to use, default %i\n", DEFAULT_SAMPLES );
     printf("      -w value: write value to [address], default %i\n", DEFAULT_VALUE);
     printf("\n");
-    printf("(bat3 revision $Rev$)\n");
+    printf("(bat3 release %s)\n", VERSION);
     printf("\n");
 }
 
@@ -291,7 +292,8 @@ int main(int argc, char *argv[]) {
     
     setloglevel(loglevel, "bat3");
     
-    logabba(L_MIN, "%s ($Rev$) started, loglevel %i, getting %d samples, using %imA to load, listening to port %d", argv[0], loglevel, samples, current, portno);
+    logabba(L_MIN, "%s (Ver %s) started, loglevel %i, getting %d samples, using %imA to load, listening to port %d", 
+	argv[0], VERSION, loglevel, samples, current, portno);
     
     if (!getsample(fd, &state, logfile)) {
 	logabba(L_MIN, "Did not get a sample");

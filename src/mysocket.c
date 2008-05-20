@@ -132,6 +132,21 @@ mysock_t cmdEnd(int fd, char *rest) {
     return MYSOCK_END;
 }
 
+mysock_t cmdRead(int fd, char *rest) {
+    
+    int address;
+    
+    if (sscanf(rest, "%d", &address)!=1)
+	writeFd(fd, "Sorry, couldn't decode <%s> to a integer\n", rest);
+    else{
+	writeFd(fd, "I'll read %d\n", address);
+	getAddress(address);
+    }
+    
+    return MYSOCK_OKAY;
+}
+
+
 mysock_t cmdBat(int fd, char *rest) {
     
     char *val;
@@ -189,6 +204,8 @@ mysock_t readSocket(int fd) {
 	cmdBat(fd, buffer);
     } else if (strcmp(cmd, "end")==0) {
 	ret = cmdEnd(fd, buffer);
+    } else if (strcmp(cmd, "read")==0) {
+	ret = cmdRead(fd, buffer);
     } else {
 	writeFd(fd, "I got your message but didn't understand it: <%s>\n", cmd);
 	writeFd(fd, "You could try help\n");
