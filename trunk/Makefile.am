@@ -29,4 +29,5 @@ EXTRA_DIST=ChangeLog
 
 ChangeLog: src 
 	svn2cl --group-by-day -i
+	svn propset release "" src/bat3.c
 

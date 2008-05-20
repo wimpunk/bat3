@@ -187,3 +187,8 @@ int getBatI()
 {
     return curState.bat_i;
 }
+
+int getAddress()
+{
+    return -1;
+}
