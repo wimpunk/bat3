@@ -18,6 +18,8 @@ typedef enum {
     MYSOCK_END
 } mysock_t;
 
+
+void initMySocket();
 void setPortno(int no);
 // int openMySocket(int portno);
 // int acceptSocket(int socketfd);

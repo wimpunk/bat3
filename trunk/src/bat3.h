@@ -46,5 +46,7 @@ struct bat3 {
 
 };
 
+int getAddress();
+
 #endif
 
