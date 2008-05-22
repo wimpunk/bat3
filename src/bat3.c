@@ -227,6 +227,7 @@ int main(int argc, char *argv[]) {
     
     strncpy(device, BAT3DEV, sizeof(BAT3DEV));
     
+	initMySocket();
     
     while ((c=getopt(argc, argv, "a:c:d:f:h?l:p:rs:w:"))!=EOF) {
 	switch (c) {
