@@ -230,149 +230,149 @@ int main(int argc, char *argv[]) {
 	initMySocket();
     
     while ((c=getopt(argc, argv, "a:c:d:f:h?l:p:rs:w:"))!=EOF) {
-	switch (c) {
-	    case 'a': // address
-		address=atoi(optarg);
-		break;
-	    case 'c': // current
-		current = atoi(optarg);
-		break;
-	    case 'd': // device
-		strncpy(device, optarg, sizeof(device)-1);
-		printf("I'll read device %s\n", device);
-		break;
-	    case 'f': // logfile
-		logfile = fopen(optarg, "a");
-		if (logfile == NULL){
-		    fprintf(stderr, "Error opening logfile %s: %s", optarg, strerror(errno));
+		switch (c) {
+			case 'a': // address
+				address=atoi(optarg);
+				break;
+			case 'c': // current
+				current = atoi(optarg);
+				break;
+			case 'd': // device
+				strncpy(device, optarg, sizeof(device)-1);
+				printf("I'll read device %s\n", device);
+				break;
+			case 'f': // logfile
+				logfile = fopen(optarg, "w");
+				if (logfile == NULL) {
+					fprintf(stderr, "Error opening logfile %s: %s\n", optarg, strerror(errno));
+				}
+			case 'l': // loglevel
+				loglevel = atoi(optarg);
+				break;
+			case 'p': // pipe
+				portno = atoi(optarg);
+				break;
+			case 'r': // read
+				read=1;
+				break;
+			case 's': // samples
+				samples = atoi(optarg);
+				break;
+			case 'w':
+				write = 1;
+				value = atoi(optarg);
+				break;
+				
+			case '?':
+			case 'h':
+			default:
+				errcnt++;
+				
 		}
-	    case 'l': // loglevel
-		loglevel = atoi(optarg);
-		break;
-	    case 'p': // pipe
-		portno = atoi(optarg);
-		break;
-	    case 'r': // read
-		read=1;
-		break;
-	    case 's': // samples
-		samples = atoi(optarg);
-		break;
-	    case 'w':
-		write = 1;
-		value = atoi(optarg);
-		break;
+		if (errcnt) break;
+	}
+	
+	if (errcnt) {
+		usage(argv[0]);
+		return(1);
+	}
+	
+	
+	if ((fd = openStream(device)) == -1) {
+		logabba(L_MIN, "Could not open device %s", device);
+		return 0;
+	}
+	
+	setPortno(portno);
+	
+	// fprintf(stdout, "opening port returned %d", socketfd);
+	
+	
+	if ((samples<-1)) samples = DEFAULT_SAMPLES;
+	if ((current<0) || (current>1000)) current = DEFAULT_CURRENT;
+	
+	setloglevel(loglevel, "bat3");
+	
+	logabba(L_MIN, "%s (Ver %s) started, loglevel %i, getting %d samples, using %imA to load, listening to port %d",
+			argv[0], VERSION, loglevel, samples, current, portno);
+	
+	if (!getsample(fd, &state, logfile)) {
+		logabba(L_MIN, "Did not get a sample");
+		return 0;
+	}
+	
+	cntsamples=0;
+	// ignoring broken pipes
+	signal(SIGPIPE, SIG_IGN);
+	
+	int		    FlushTime = 20 * 1000; // 20 characters @ 9600bps
+	fd_set	    rfds;
+	struct timeval  tv;
+	int		    sw_continue = 1;
+	struct timeval  now, lastrun;
+	
+	while (((cntsamples<samples) || (samples == -1)) && (sw_continue))	{
 		
-	    case '?':
-	    case 'h':
-	    default:
-		errcnt++;
+		FD_ZERO( &rfds );
+		FD_SET( fd, &rfds );
 		
+		tv.tv_sec  = FlushTime/1000000;
+		tv.tv_usec = FlushTime%1000000;
+		
+		int val;
+		
+		if (select( FD_SETSIZE, &rfds, NULL, NULL, &tv ) < 0) {
+			fprintf(stderr, "Select error: %s\n", strerror(errno));
+			return -1;
+		}
+		
+		if (FD_ISSET(fd, &rfds)) {
+			
+			if (read) doread(&state, address);
+			if (write) dowrite(&state, address, value);
+			gettimeofday(&lastrun, NULL);
+			
+			doRound(fd, &state, current, logfile);
+			cntsamples++;
+			if (cntsamples==3 && read) {
+				logabba(L_MIN, "Reading from address %i: %04X=%04X", address, state.ee_addr, state.ee_data);
+			}
+			
+			if (state.batRun != prevstate.batRun) {
+				logabba(L_MIN, "Running on %s", state.batRun==ON?"batteries":"current" );
+			}
+			
+			tv.tv_sec  = FlushTime/1000000;
+			tv.tv_usec = FlushTime%1000000;
+			
+		}
+		
+		
+		prevstate = state;
+		setBatState(&state);
+		
+		// Processing socket connections
+		if (sw_continue) {
+			sw_continue = MYSOCK_END != processMySocket(socketfd);
+		}
+		
+		gettimeofday(&now, NULL);
+		
+		// logabba(L_MIN, "Would sleep during %d usec",
+		val = 25 * 1000 - ( now.tv_sec - lastrun.tv_sec ) * 1000 * 1000 -  ( now.tv_usec - lastrun.tv_usec );
+		if (val <= 0 ) val = 0;
+		usleep(val);
+		// logabba(L_MIN, "  diff sec: %d", now.tv_sec  - lastrun.tv_sec);
+		// logabba(L_MIN, " udiff sec: %d", now.tv_usec - lastrun.tv_usec);
+		// usleep(100 * 1000);
+		// usleep (20000);
 	}
-	if (errcnt) break;
-    }
-    
-    if (errcnt) {
-	usage(argv[0]);
-	return(1);
-    }
-    
-    
-    if ((fd = openStream(device)) == -1) {
-	logabba(L_MIN, "Could not open device %s", device);
+	
+	close(fd);
+	closeMySocket(socketfd);
+	
 	return 0;
-    }
-    
-    setPortno(portno);
-    
-    // fprintf(stdout, "opening port returned %d", socketfd);
-    
-    
-    if ((samples<-1)) samples = DEFAULT_SAMPLES;
-    if ((current<0) || (current>1000)) current = DEFAULT_CURRENT;
-    
-    setloglevel(loglevel, "bat3");
-    
-    logabba(L_MIN, "%s (Ver %s) started, loglevel %i, getting %d samples, using %imA to load, listening to port %d", 
-	argv[0], VERSION, loglevel, samples, current, portno);
-    
-    if (!getsample(fd, &state, logfile)) {
-	logabba(L_MIN, "Did not get a sample");
-	return 0;
-    }
-    
-    cntsamples=0;
-    // ignoring broken pipes
-    signal(SIGPIPE, SIG_IGN);
-    
-    int		    FlushTime = 20 * 1000; // 20 characters @ 9600bps
-    fd_set	    rfds;
-    struct timeval  tv;
-    int		    sw_continue = 1;
-    struct timeval  now, lastrun;
-    
-    while (((cntsamples<samples) || (samples == -1)) && (sw_continue))	{
 	
-	FD_ZERO( &rfds );
-	FD_SET( fd, &rfds );
-	
-	tv.tv_sec  = FlushTime/1000000;
-	tv.tv_usec = FlushTime%1000000;
-	
-	int val;
-	
-	if (select( FD_SETSIZE, &rfds, NULL, NULL, &tv ) < 0) {
-	    fprintf(stderr, "Select error: %s\n", strerror(errno));
-	    return -1;
-	}
-	
-	if (FD_ISSET(fd, &rfds)) {
-	    
-	    if (read) doread(&state, address);
-	    if (write) dowrite(&state, address, value);
-	    gettimeofday(&lastrun, NULL);
-	    
-	    doRound(fd, &state, current, logfile);
-	    cntsamples++;
-	    if (cntsamples==3 && read) {
-		logabba(L_MIN, "Reading from address %i: %04X=%04X", address, state.ee_addr, state.ee_data);
-	    }
-	    
-	    if (state.batRun != prevstate.batRun) {
-		logabba(L_MIN, "Running on %s", state.batRun==ON?"batteries":"current" );
-	    }
-	    
-	    tv.tv_sec  = FlushTime/1000000;
-	    tv.tv_usec = FlushTime%1000000;
-	    
-	}
-	
-	
-	prevstate = state;
-	setBatState(&state);
-	
-	// Processing socket connections
-	if (sw_continue) {
-	    sw_continue = MYSOCK_END != processMySocket(socketfd);
-	}
-	
-	gettimeofday(&now, NULL);
-	
-	// logabba(L_MIN, "Would sleep during %d usec",
-	val = 25 * 1000 - ( now.tv_sec - lastrun.tv_sec ) * 1000 * 1000 -  ( now.tv_usec - lastrun.tv_usec );
-	if (val <= 0 ) val = 0;
-	usleep(val);
-	// logabba(L_MIN, "  diff sec: %d", now.tv_sec  - lastrun.tv_sec);
-	// logabba(L_MIN, " udiff sec: %d", now.tv_usec - lastrun.tv_usec);
-	// usleep(100 * 1000);
-	// usleep (20000);
-    }
-    
-    close(fd);
-    closeMySocket(socketfd);
-    
-    return 0;
-    
 }
 
 // vim:set autoindent:
