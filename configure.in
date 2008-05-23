@@ -11,7 +11,7 @@ AC_SUBST(VERSION)
 
 #REV werd MYREV maar geen idee hoe het verderr moest
 #MYREV=`svn info . | grep 'Revision: '| awk '{print $2}'`
-AC_DEFINE(REV,"71","Current revision")
+AC_DEFINE(REV,"75","Current revision")
 # REV=71
 # AM_INIT_AUTOMAKE(REV)
 AC_SUBST(REV)
