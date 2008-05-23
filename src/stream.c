@@ -147,7 +147,7 @@ int readStream(int fd, unsigned char *msg, int max) {
 			default:
 				if (state==STATE_STARTED) {
 					if (msg[pos-1] == ESC && lastesc!=pos) {
-						logabba(L_NOTICE, "converted one on pos %d", pos);
+						logabba(L_INFO, "converted one on pos %d", pos);
 						lastesc=pos;
 						msg[pos-1] = rxchar ^ (1<<5);
 					} else {
