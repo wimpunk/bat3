@@ -76,7 +76,7 @@ int writeStream(int fd, unsigned char *msg, int len) {
 	
 	crc = calcCrc(msg, len);
 	if (crc == 0x7E || crc == 0x7D || crc == 0x7F || crc == 0x11 || crc == 0x13) {
-		logabba(L_NOTICE, "writeStream changed crc");
+		logabba(L_INFO, "writeStream changed crc");
 		mymsg[pos++] = ESC;
 		mymsg[pos++] = crc ^ (1<<5);
 	}
@@ -171,7 +171,7 @@ int readStream(int fd, unsigned char *msg, int max) {
 			strpos+=snprintf(converted+strpos, sizeof(converted)-strpos, " %02X", msg[cnt]);
 		}
 		
-		logabba(L_NOTICE, "Received %d bytes (calcCrc=%04X,crc=%04X): %s ",
+		logabba(L_INFO, "Received %d bytes (calcCrc=%04X,crc=%04X): %s ",
 				pos, calcCrc(msg, pos-1), msg[pos-1], converted);
 		
 		if (calcCrc(msg, pos-1) != msg[pos-1]) {
