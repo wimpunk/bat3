@@ -297,12 +297,11 @@ mysock_t processMySocket() {
 		if (!(sfd_connect[cnt]>0)) continue;
 		
 		if (FD_ISSET(cnt, &rfds)) {
-			int i;	
+			
 			logabba(L_NOTICE, "FD_ISSET on fd=%i", cnt);
-			
 			mysock_t sockret;
-			
 			sockret = readSocket(cnt);
+			
 			switch (sockret) {
 				
 				case MYSOCK_QUIT:
@@ -326,31 +325,28 @@ mysock_t processMySocket() {
 	return MYSOCK_OKAY;
 }
 
-
-
-
-
 static int writePrompt(int fd) {
 	
 	return writeFd(fd, "> ");
+	
 }
 
 int closeFd(int fd) {
 	
-	if ( cnt_connect[fd] > 0 ) {
+	if ( sfd_connect[fd] > 0 ) {
 		close(fd);
-		cnt_connect[fd]=0;
+		sfd_connect[fd]=0;
 	}
 	
 	return 0;
 	
 }
 
-static void closeMySocket(int sockfd) {
+void closeMySocket(int sockfd) {
 	
 	int fd;
 	
-	for ( fd=0; fd<MAXSFD; fd++ ) closeFd(cnt);
+	for ( fd=0; fd<MAXSFD; fd++ ) closeFd(fd);
 	
 	close(sockfd);
 }
