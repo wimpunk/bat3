@@ -220,7 +220,7 @@ mysock_t readSocket(int fd) {
 		writeFd(fd, "You could try help\n");
 	}
 	
-	if (ret!=-1) writePrompt(fd);
+	if ((ret!=MYSOCK_END) && (ret!=MYSOCK_QUIT)) writePrompt(fd);
 	
 	return ret;
 	
@@ -309,8 +309,14 @@ mysock_t processMySocket() {
 					break;
 					
 				case MYSOCK_END:
-					// for (i=0; i<cnt_connect; i++) close(sfd_connect[cnt]);
-					// TODO: close all connections
+					
+					for (i=0; i<cnt_connect; i++) {
+						if (sfd_connect[cnt]>0) {
+							closeFd(i);
+							sfd_connect[cnt]=0;
+						};
+					}
+					
 					return MYSOCK_END;
 					break;
 					
