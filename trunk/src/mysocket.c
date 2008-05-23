@@ -33,7 +33,7 @@ static int portno=0;
 
 static int cnt_connect=0;	// number of connected clients
 static int sfd_connect[MAXSFD];	// list of the socket file discriptors
-								// of the connected clients
+// of the connected clients
 static int sockfd=-1;
 static time_t lasttry=0;
 int closeFd(int fd) ;
@@ -205,13 +205,13 @@ mysock_t readSocket(int fd) {
 	
 	if (strcmp(cmd, "help")==0) {
 		cmdHelp(fd);
-	} else if ((strcmp(cmd, "quit")==0) || (strcmp(cmd,"q")==0)){
+	} else if ((strcmp(cmd, "quit")==0) || (strcmp(cmd, "q")==0)){
 		ret = cmdQuit(fd, buffer);
-	} else if ((strcmp(cmd, "bat")==0) || (strcmp(cmd,"b")==0){
+	} else if ((strcmp(cmd, "bat")==0) || (strcmp(cmd, "b")==0)) {
 		cmdBat(fd, buffer);
-	} else if ((strcmp(cmd, "exit")==0) || (strcmp(cmd,"e")==0){
+	} else if ((strcmp(cmd, "exit")==0) || (strcmp(cmd, "e")==0)) {
 		ret = cmdEnd(fd, buffer);
-	} else if ((strcmp(cmd, "read")==0) || (strcmp(cmd,"r")==0){
+	} else if ((strcmp(cmd, "read")==0) || (strcmp(cmd, "r")==0)) {
 		ret = cmdRead(fd, buffer);
 	} else {
 		writeFd(fd, "I got your message but didn't understand it: <%s>\n", cmd);
@@ -291,7 +291,7 @@ mysock_t processMySocket() {
 	
 	for (cnt=0; cnt<MAXSFD; cnt++) {
 		
-		if (!(sfd_connect[cnt]>0)) continue; 
+		if (!(sfd_connect[cnt]>0)) continue;
 		
 		if (FD_ISSET(cnt, &rfds)) {
 			
