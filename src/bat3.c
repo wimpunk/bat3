@@ -158,7 +158,7 @@ int doRound(int fd, struct bat3 *sample, int current, FILE *logfile) {
 	
 	// TODO: quick hack
 	// if ((cntsamples == 0))
-	state.softJP3 = ON;
+	// state.softJP3 = ON;
 	
 	logabba(L_INFO, "Original led: %s", print_onoff(state.led));
 	// Even when running on batteries, we have to kietel the opamp
