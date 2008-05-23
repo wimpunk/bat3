@@ -289,7 +289,7 @@ mysock_t processMySocket() {
 	
 	for (cnt=0; cnt<MAXSFD; cnt++) {
 		
-		if (!(sfd_connect>0)) continue; 
+		if (!(sfd_connect[cnt]>0)) continue; 
 		
 		if (FD_ISSET(cnt, &rfds)) {
 			
