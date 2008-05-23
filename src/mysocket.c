@@ -130,9 +130,10 @@ void cmdHelp(int fd) {
 }
 
 mysock_t cmdQuit(int fd, char *rest) {
-	// TODO: should close everything nicely
+	
 	writeFd(fd, "Have a nice day.\n");
 	close(fd);
+	
 	return MYSOCK_QUIT;
 }
 
@@ -306,18 +307,10 @@ mysock_t processMySocket() {
 				
 				case MYSOCK_QUIT:
 					closeFd(cnt);
-					sfd_connect[cnt]=0;
 					break;
 					
 				case MYSOCK_END:
-					
-					for (i=0; i<cnt_connect; i++) {
-						if (sfd_connect[cnt]>0) {
-							closeFd(i);
-							sfd_connect[cnt]=0;
-						};
-					}
-					
+					closeMySocket(sockfd);
 					return MYSOCK_END;
 					break;
 					
@@ -343,32 +336,26 @@ static int writePrompt(int fd) {
 }
 
 int closeFd(int fd) {
-	// TODO: should be done by a linked list
-	int cnt, i;
-	for (cnt=0; cnt<cnt_connect; cnt++)
-		if (sfd_connect[cnt] == fd) break;
 	
-	if (cnt>=cnt_connect) return 0;	// not found
-	
-	close(fd);
-	
-	for (i=cnt+1; i<cnt_connect; i++) {
-		sfd_connect[i-1] = sfd_connect[i];
+	if ( cnt_connect[fd] > 0 ) {
+		close(fd);
+		cnt_connect[fd]=0;
 	}
-	
-	cnt_connect--;
 	
 	return 0;
 	
 }
-void closeMySocket(int sockfd) {
+
+static void closeMySocket(int sockfd) {
 	
-	int cnt;
+	int fd;
 	
-	for (cnt=cnt_connect; cnt>0; cnt--)	closeFd(sfd_connect[cnt]);
+	for ( fd=0; fd<MAXSFD; fd++ ) closeFd(cnt);
 	
 	close(sockfd);
 }
+
+
 int writeFd(int fd, const char *msg, ...) {
 	
 	int cnt;
@@ -386,9 +373,8 @@ int writeFd(int fd, const char *msg, ...) {
 	// logabba(L_MIN, "sending returned %d: %s", cnt, strerror(errno));
 	if (cnt < 0) {
 		logabba(L_MIN, "ERROR sending to socket: %s", strerror(errno));
-		
 		closeFd(fd);
-		cnt=-1;
+		cnt=-1; // forcing error
 	} else if (cnt != strlen(mymsg)){
 		logabba(L_MIN, "Wrote a wrong number of bytes: %d != %d", cnt, strlen(mymsg) );
 	}
