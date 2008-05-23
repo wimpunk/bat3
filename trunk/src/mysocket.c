@@ -255,7 +255,7 @@ mysock_t processMySocket() {
 	
 	// Set the connected sockets
 	for (cnt=0; cnt<MAXSFD; cnt++) {
-		if (sfd_connect[cnt]!=0) FD_SET(sfd_connect[cnt], &rfds);
+		if (sfd_connect[cnt]>0) FD_SET(sfd_connect[cnt], &rfds);
 	}
 	
 	// check if someone wants to connect
@@ -292,6 +292,8 @@ mysock_t processMySocket() {
 		if (!(sfd_connect[cnt]>0)) continue; 
 		
 		if (FD_ISSET(cnt, &rfds)) {
+			
+			logabba(L_NOTICE, "FD_ISSET on fd=%i", cnt);
 			
 			mysock_t sockret;
 			
