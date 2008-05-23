@@ -97,9 +97,9 @@ static int acceptSocket(int sockfd) {
 	} else {
 		logabba(L_MIN, "Accepted connection");
 		if (writeFd(newsockfd, "Welcome to bat3 (%s) on fd %d\n", VERSION, newsockfd)>0) {
-			logabba(L_MIN, "Wrote info message");
+			logabba(L_NOTICE, "Wrote info message");
 		} else {
-			logabba(L_MIN, "Failed writing info message");
+			logabba(L_NOTICE, "Failed writing info message");
 			close(newsockfd);
 			newsockfd = -1;
 		}
@@ -125,6 +125,7 @@ void cmdHelp(int fd) {
 	writeFd(fd, " bat: get battery state\n" );
 	writeFd(fd, " quit: close this connection\n");
 	writeFd(fd, " exit: end the bat3 program\n");
+	logabba(L_NOTICE, "Wrote help msg to %i", fd);
 	
 }
 
