@@ -168,9 +168,9 @@ int doRound(int fd, struct bat3 *sample, int current, FILE *logfile) {
 	} else {
 		changeled(&state);
 		doload(&state, current);
-		logabba(L_MAX, "Switching led to %s", print_onoff(state.led));
+		logabba(L_NOTICE, "Switching led to %s", print_onoff(state.led));
 	}
-	logabba(L_NOTICE, "will encode led: %s", print_onoff(state.led));
+	logabba(L_INFO, "will encode led: %s", print_onoff(state.led));
 	if ((cnt = encodemsg(msg, sizeof(msg), &state))) {
 		logabba(L_INFO, "Writing msg");
 		writeStream(fd, msg, cnt);
@@ -187,9 +187,9 @@ int doRound(int fd, struct bat3 *sample, int current, FILE *logfile) {
 		logabba(L_MIN, "Did not get a sample even after retrying %d times", cnt);
 		return -1;
 	}
-	logabba(L_NOTICE, "got state led: %s", print_onoff(state.led));
+	logabba(L_INFO, "got state led: %s", print_onoff(state.led));
 	*sample = state;
-	logabba(L_NOTICE, "got sample led: %s", print_onoff(sample->led));
+	logabba(L_INFO, "got sample led: %s", print_onoff(sample->led));
 	
 	// usleep(100);
 	
