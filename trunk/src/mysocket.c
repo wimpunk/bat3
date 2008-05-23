@@ -174,6 +174,12 @@ mysock_t cmdBat(int fd, char *rest) {
 	
 }
 
+mysock_t cmdState(int fd, char *rest) {
+	writeFd(fd, "checking state\n");
+	print_bat3(fd, getState());  // struct bat3* mybat3) {
+	return MYSOCK_OKAY;
+}
+
 mysock_t readSocket(int fd) {
 	
 	char buffer[256];
@@ -216,6 +222,8 @@ mysock_t readSocket(int fd) {
 		ret = cmdEnd(fd, buffer);
 	} else if ((strcmp(cmd, "read")==0) || (strcmp(cmd, "r")==0)) {
 		ret = cmdRead(fd, buffer);
+	} else if ((strcmp(cmd, "state")==0) || (strcmp(cmd, "s")==0)) {
+		ret = cmdState(fd, buffer);
 	} else {
 		writeFd(fd, "I got your message but didn't understand it: <%s>\n", cmd);
 		writeFd(fd, "You could try help\n");
