@@ -9,6 +9,9 @@
 #include "convert.h"
 #include "log.h"
 #include "tsbat3.h"
+#include <stdarg.h>
+#include <unistd.h>
+#include <string.h>
 
 #include "stdio.h"
 
@@ -98,34 +101,47 @@ static void print_BAT3reply(FILE *fd, struct BAT3reply* reply) {
 	}
 }
 
-void print_bat3(FILE *fd, struct bat3* mybat3) {
+int fdprintf(int fd, char* fmt, ...)
+{
+	va_list args;
+	char line[256];
 	
-	if (fd!=NULL) {
-		fprintf(fd, "->print_bat3\n");
-		fprintf(fd, "input supply voltage     = %04X (%3.2fV)\n",  mybat3->inp_u, 0.70/1000 * (mybat3->inp_u)); //
-		fprintf(fd, "regulated supply voltage = %04X (%3.2fV)\n",  mybat3->reg_u, 0.19/1000 * (mybat3->reg_u)); //
-		fprintf(fd, "battery voltage          = %04X (%3.2fV)\n",  mybat3->bat_u, battV(mybat3->bat_u)); //
-		fprintf(fd, "battery current          = %04X (%3.2fmA)\n", mybat3->bat_i, battI(mybat3->bat_i)/1000.0); //
-		fprintf(fd, "low time                 = %04X\n", mybat3->pwm_lo); //
-		fprintf(fd, "high & low time          = %04X\n", mybat3->pwm_t); //
-		fprintf(fd, "temperature              = %04X (%3.2fC)\n", mybat3->temp, tempC(mybat3->temp)); //  in TMP124 format
-		fprintf(fd, "EEPROM address           = %04X\n", mybat3->ee_addr);
-		fprintf(fd, "EEPROM data              = %04X\n", mybat3->ee_data);
+	va_start(args,fmt);
+	snprintf(line, sizeof(line), fmt, args);
+	va_end(args);
+	
+	return write(fd, line, strlen(line));
+	
+}
+
+void print_bat3(int fd, struct bat3* mybat3) {
+	
+	if (fd>0) {
+		fdprintf(fd, "->print_bat3\n");
+		fdprintf(fd, "input supply voltage     = %04X (%3.2fV)\n",  mybat3->inp_u, 0.70/1000 * (mybat3->inp_u)); //
+		fdprintf(fd, "regulated supply voltage = %04X (%3.2fV)\n",  mybat3->reg_u, 0.19/1000 * (mybat3->reg_u)); //
+		fdprintf(fd, "battery voltage          = %04X (%3.2fV)\n",  mybat3->bat_u, battV(mybat3->bat_u)); //
+		fdprintf(fd, "battery current          = %04X (%3.2fmA)\n", mybat3->bat_i, battI(mybat3->bat_i)/1000.0); //
+		fdprintf(fd, "low time                 = %04X\n", mybat3->pwm_lo); //
+		fdprintf(fd, "high & low time          = %04X\n", mybat3->pwm_t); //
+		fdprintf(fd, "temperature              = %04X (%3.2fC)\n", mybat3->temp, tempC(mybat3->temp)); //  in TMP124 format
+		fdprintf(fd, "EEPROM address           = %04X\n", mybat3->ee_addr);
+		fdprintf(fd, "EEPROM data              = %04X\n", mybat3->ee_data);
 		
-		fprintf(fd, "PWM1en   = %s\n", print_onoff(mybat3->PWM1en));
-		fprintf(fd, "PWM2en   = %s\n", print_onoff(mybat3->PWM2en));
-		fprintf(fd, "offsetEn = %s\n", print_onoff(mybat3->offsetEn));
-		fprintf(fd, "opampEn  = %s\n", print_onoff(mybat3->opampEn));
-		fprintf(fd, "buckEn   = %s\n", print_onoff(mybat3->buckEn));
-		fprintf(fd, "led      = %s\n", print_onoff(mybat3->led));
-		fprintf(fd, "jp3      = %s\n", print_onoff(mybat3->jp3));
-		fprintf(fd, "batRun   = %s\n", print_onoff(mybat3->batRun));
+		fdprintf(fd, "PWM1en   = %s\n", print_onoff(mybat3->PWM1en));
+		fdprintf(fd, "PWM2en   = %s\n", print_onoff(mybat3->PWM2en));
+		fdprintf(fd, "offsetEn = %s\n", print_onoff(mybat3->offsetEn));
+		fdprintf(fd, "opampEn  = %s\n", print_onoff(mybat3->opampEn));
+		fdprintf(fd, "buckEn   = %s\n", print_onoff(mybat3->buckEn));
+		fdprintf(fd, "led      = %s\n", print_onoff(mybat3->led));
+		fdprintf(fd, "jp3      = %s\n", print_onoff(mybat3->jp3));
+		fdprintf(fd, "batRun   = %s\n", print_onoff(mybat3->batRun));
 		
-		fprintf(fd, "ee_read  = %s\n", print_onoff(mybat3->ee_read));
-		fprintf(fd, "ee_write = %s\n", print_onoff(mybat3->ee_write));
-		fprintf(fd, "ee_ready = %s\n", print_onoff(mybat3->ee_ready));
+		fdprintf(fd, "ee_read  = %s\n", print_onoff(mybat3->ee_read));
+		fdprintf(fd, "ee_write = %s\n", print_onoff(mybat3->ee_write));
+		fdprintf(fd, "ee_ready = %s\n", print_onoff(mybat3->ee_ready));
 		
-		fprintf(fd, "softJP3  = %s\n", print_onoff(mybat3->softJP3));
+		fdprintf(fd, "softJP3  = %s\n", print_onoff(mybat3->softJP3));
 	}
 }
 
@@ -168,7 +184,9 @@ int decodemsg(char *msg, int size, struct bat3* mybat3, FILE* logfile) {
 	mybat3->ee_write = reply->ee_write?ON:OFF;
 	mybat3->ee_ready = reply->ee_ready?ON:OFF;
 	
-	print_bat3(logfile, mybat3);
+	 
+	// TODO: this should be done nicer
+	print_bat3(logfile->_fileno, mybat3);
 	
 	return 0;
 	
