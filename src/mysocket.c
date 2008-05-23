@@ -21,7 +21,9 @@
 #include "bat3func.h"
 #include "mysocket.h"
 // #include "cmdsocket.h"
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
 
 #define MAXSFD 128
 static int writePrompt(int fd);
@@ -96,7 +98,7 @@ static int acceptSocket(int sockfd) {
 		fprintf(stderr, "ERROR on accept");
 	} else {
 		logabba(L_MIN, "Accepted connection");
-		if (writeFd(newsockfd, "Welcome to bat3 (%s) on fd %d\n", VERSION, newsockfd)>0) {
+		if (writeFd(newsockfd, "Welcome to bat3 (%s-%s) on fd %d\n", VERSION, REV, newsockfd)>0) {
 			logabba(L_NOTICE, "Wrote info message");
 		} else {
 			logabba(L_NOTICE, "Failed writing info message");
