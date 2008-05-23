@@ -205,13 +205,13 @@ mysock_t readSocket(int fd) {
 	
 	if (strcmp(cmd, "help")==0) {
 		cmdHelp(fd);
-	} else if (strcmp(cmd, "quit")==0) {
+	} else if ((strcmp(cmd, "quit")==0) || (strcmp(cmd,"q")==0)){
 		ret = cmdQuit(fd, buffer);
-	} else if (strcmp(cmd, "bat")==0) {
+	} else if ((strcmp(cmd, "bat")==0) || (strcmp(cmd,"b")==0){
 		cmdBat(fd, buffer);
-	} else if (strcmp(cmd, "end")==0) {
+	} else if ((strcmp(cmd, "exit")==0) || (strcmp(cmd,"e")==0){
 		ret = cmdEnd(fd, buffer);
-	} else if (strcmp(cmd, "read")==0) {
+	} else if ((strcmp(cmd, "read")==0) || (strcmp(cmd,"r")==0){
 		ret = cmdRead(fd, buffer);
 	} else {
 		writeFd(fd, "I got your message but didn't understand it: <%s>\n", cmd);
