@@ -26,8 +26,10 @@
 
 SUBDIRS=src
 EXTRA_DIST=ChangeLog 
+REV= @REV@
 
 ChangeLog: src 
 	svn2cl --group-by-day -i
-	svn propset release "" src/bat3.c
+#	svn propset rev `svn info . | grep 'Revision: '| cut -d ' ' -f2` src/bat3.c
+#	echo svn propset rev `svn info . | grep 'Revision: '| cut -d ' ' -f2` src/bat3.c
 
