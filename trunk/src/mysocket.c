@@ -296,13 +296,14 @@ mysock_t processMySocket() {
 		if (!(sfd_connect[cnt]>0)) continue;
 		
 		if (FD_ISSET(cnt, &rfds)) {
-			
+			int i;	
 			logabba(L_NOTICE, "FD_ISSET on fd=%i", cnt);
 			
 			mysock_t sockret;
 			
 			sockret = readSocket(cnt);
 			switch (sockret) {
+				
 				case MYSOCK_QUIT:
 					closeFd(cnt);
 					sfd_connect[cnt]=0;
