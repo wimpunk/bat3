@@ -1,7 +1,3 @@
-// #include <sys/types.h>
-// #include <sys/stat.h>
-// #include <fcntl.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,7 +9,9 @@
 #include <sys/time.h>
 #include <time.h>
 
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
 
 /*
  * $Id$
@@ -130,7 +128,7 @@ static void usage(char *progname) {
     printf("      -a address: address to use while reading/writing, default %i\n", DEFAULT_ADDRESS);
     printf("      -c current: current to load (mA), default %i\n", DEFAULT_CURRENT);
     printf("      -d device: device to use, default %s\n", BAT3DEV );
-    printf("      -f logfile: file to dump arrays to, default /dev/null\n   ");
+    printf("      -f logfile: file to dump arrays to, default /dev/null\n");
     printf("      -l loglevel: loglevel to use, default %i\n", DEFAULT_LOGLEVEL );
     printf("      -p portnr: portnumber to listen to, default %i\n", DEFAULT_PORT);
     printf("      -r : read from [address]\n");
