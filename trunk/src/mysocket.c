@@ -83,7 +83,7 @@ static int openMySocket(int portno) {
 	
 }
 
-/* AcceptSocket: accepts the connection
+/** AcceptSocket: accepts the connection
  * returns filedescriptor to the socket */
 static int acceptSocket(int sockfd) {
 	
@@ -99,9 +99,9 @@ static int acceptSocket(int sockfd) {
 	} else {
 		logabba(L_MIN, "Accepted connection");
 		if (writeFd(newsockfd, "Welcome to bat3 (%s-%s) on fd %d\n", VERSION, REV, newsockfd)>0) {
-			logabba(L_NOTICE, "Wrote info message");
+			logabba(L_NOTICE, "Wrote info message to fd %d", newsockfd);
 		} else {
-			logabba(L_NOTICE, "Failed writing info message");
+			logabba(L_NOTICE, "Failed writing info message to fd %d");
 			close(newsockfd);
 			newsockfd = -1;
 		}
@@ -112,8 +112,6 @@ static int acceptSocket(int sockfd) {
 			// logabba(L_MAX, "Writing prompt failed");
 			close(newsockfd);
 			newsockfd = -1;
-		} else {
-			// logabba(L_MAX, "Wrote a correct prompt (I think)");
 		}
 	}
 	
@@ -258,7 +256,7 @@ mysock_t processMySocket() {
 	
 	// Set the connected sockets
 	for (cnt=0; cnt<MAXSFD; cnt++) {
-		if (sfd_connect[cnt]>0) FD_SET(sfd_connect[cnt], &rfds);
+		if (sfd_connect[cnt]>0) FD_SET(cnt, &rfds);
 	}
 	
 	// check if someone wants to connect
@@ -278,6 +276,7 @@ mysock_t processMySocket() {
 		
 		logabba(L_MIN, "Someone knocks");
 		tempfd = acceptSocket(sockfd);
+		logabba(L_NOTICE, "Accepted knocking person on sockfd %d", tempfd);
 		
 		if (tempfd >= MAXSFD) {
 			logabba(L_MIN, "To much connected clients");
