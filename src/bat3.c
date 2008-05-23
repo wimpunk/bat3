@@ -137,7 +137,7 @@ static void usage(char *progname) {
     printf("      -s samples: maxsamples to use, default %i\n", DEFAULT_SAMPLES );
     printf("      -w value: write value to [address], default %i\n", DEFAULT_VALUE);
     printf("\n");
-    printf("(bat3 release %s)\n", VERSION);
+    printf("(bat3 release %s-r%s)\n", VERSION, REV);
     printf("\n");
 }
 
