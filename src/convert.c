@@ -98,7 +98,7 @@ static void print_BAT3reply(FILE *fd, struct BAT3reply* reply) {
     }
 }
 
-static void print_bat3(FILE *fd, struct bat3* mybat3) {
+void print_bat3(FILE *fd, struct bat3* mybat3) {
     
     if (fd!=NULL) {
 	fprintf(fd, "->print_bat3\n");

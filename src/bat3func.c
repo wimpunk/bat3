@@ -188,3 +188,8 @@ int getBatI() {
 int getAddress() {
 	return -1;
 }
+
+struct bat3* getState()
+{
+	return &curState;
+}
