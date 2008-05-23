@@ -130,7 +130,9 @@ void cmdHelp(int fd) {
 }
 
 mysock_t cmdQuit(int fd, char *rest) {
+	// TODO: should close everything nicely
 	writeFd(fd, "Have a nice day.\n");
+	close(fd);
 	return MYSOCK_QUIT;
 }
 
@@ -203,7 +205,7 @@ mysock_t readSocket(int fd) {
 	
 	if (n<=1) buffer[0] = 0;
 	
-	if (strcmp(cmd, "help")==0) {
+	if ((strcmp(cmd, "help")==0) || (strcmp(cmd, "q")==0)) {
 		cmdHelp(fd);
 	} else if ((strcmp(cmd, "quit")==0) || (strcmp(cmd, "q")==0)){
 		ret = cmdQuit(fd, buffer);
