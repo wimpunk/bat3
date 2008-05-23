@@ -103,7 +103,7 @@ void doload(struct bat3* state, int target) {
 		if (newpwm<0) newpwm = 0;
 		if (newpwm>state->pwm_t) newpwm = state->pwm_t;
 		
-		logabba(L_INFO,  "Changing pwm_lo from %04X to %04X, mychg = %04X", state->pwm_lo, newpwm);
+		logabba(L_INFO,  "Changing pwm_lo from %04X to %04X", state->pwm_lo, newpwm);
 		state->pwm_lo = newpwm;
 		
 	}
