@@ -20,6 +20,7 @@
 #include "bat3.h"
 #include "bat3func.h"
 #include "mysocket.h"
+#include "convert.h"
 // #include "cmdsocket.h"
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -31,7 +32,7 @@ static int writeFd(int fd, const char *msg, ...);
 
 static int portno=0;
 
-static int cnt_connect=0;	// number of connected clients
+// static int cnt_connect=0;	// number of connected clients
 static int sfd_connect[MAXSFD];	// list of the socket file discriptors
 // of the connected clients
 static int sockfd=-1;
