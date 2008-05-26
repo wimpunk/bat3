@@ -124,6 +124,8 @@ void cmdHelp(int fd) {
 	
 	writeFd(fd, "Available commands:\n");
 	writeFd(fd, " bat: get battery state\n" );
+	writeFd(fd, " state: get current state (complete array)\n");
+	writeFd(fd, " current i: set new target current to i\n");
 	writeFd(fd, " quit: close this connection\n");
 	writeFd(fd, " exit: end the bat3 program\n");
 	logabba(L_NOTICE, "Wrote help msg to %i", fd);
@@ -176,11 +178,27 @@ mysock_t cmdBat(int fd, char *rest) {
 }
 
 mysock_t cmdState(int fd, char *rest) {
+	
 	writeFd(fd, "checking state\n");
 	print_bat3(fd, getState());  // struct bat3* mybat3) {
+	
 	return MYSOCK_OKAY;
 }
 
+mysock_t cmdCurrent(int fd, char *rest) {
+	
+	char msg[256];
+	int newcurrent;
+	
+	logabba(L_INFO, "Decoding <%s>", rest);
+	sscanf(rest, "%s %i", msg, &newcurrent);
+	logabba(L_INFO, "Changing current from %i to %i", getCurrent(), newcurrent);
+	
+	setCurrent(newcurrent);
+	
+	return MYSOCK_OKAY;
+	
+}
 mysock_t readSocket(int fd) {
 	
 	char buffer[256];
@@ -225,6 +243,8 @@ mysock_t readSocket(int fd) {
 		ret = cmdRead(fd, buffer);
 	} else if ((strcmp(cmd, "state")==0) || (strcmp(cmd, "s")==0)) {
 		ret = cmdState(fd, buffer);
+	} else if (cmd[0] == 'c') {
+		ret = cmdCurrent(fd,buffer);
 	} else {
 		writeFd(fd, "I got your message but didn't understand it: <%s>\n", cmd);
 		writeFd(fd, "You could try help\n");

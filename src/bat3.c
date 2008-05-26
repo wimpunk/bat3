@@ -40,6 +40,8 @@
 #define DEFAULT_PORT     1302
 #define MAX_RETRIES 5
 
+int current  = DEFAULT_CURRENT;
+
 char *print_onoff(onoff_t onoff) {
 	if (onoff == ON) {
 		return "ON";
@@ -80,6 +82,21 @@ char *print_onoff(onoff_t onoff) {
  * return;
  * }
  */
+
+int setCurrent(int i) {
+	
+	if ((i<0) || (i>1000)) current = DEFAULT_CURRENT;
+	else current = i;
+	
+	return current;
+	
+}
+
+int getCurrent() {
+	
+	return current;
+	
+}
 
 static int getsample(int fd, struct bat3 *sample, FILE *logfile) {
 	
@@ -208,7 +225,7 @@ int main(int argc, char *argv[]) {
 	
 	int loglevel = DEFAULT_LOGLEVEL;
 	int samples  = DEFAULT_SAMPLES;
-	int current  = DEFAULT_CURRENT;
+	
 	int address  = DEFAULT_ADDRESS;
 	int portno   = DEFAULT_PORT;
 	
@@ -233,7 +250,7 @@ int main(int argc, char *argv[]) {
 				address=atoi(optarg);
 				break;
 			case 'c': // current
-				current = atoi(optarg);
+				setCurrent(atoi(optarg));
 				break;
 			case 'd': // device
 				strncpy(device, optarg, sizeof(device)-1);
@@ -287,7 +304,7 @@ int main(int argc, char *argv[]) {
 	
 	
 	if ((samples<-1)) samples = DEFAULT_SAMPLES;
-	if ((current<0) || (current>1000)) current = DEFAULT_CURRENT;
+	
 	
 	setloglevel(loglevel, "bat3");
 	
