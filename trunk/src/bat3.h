@@ -47,6 +47,8 @@ struct bat3 {
 };
 
 int getAddress();
+int getCurrent();
+int setCurrent(int i);
 
 #endif
 
