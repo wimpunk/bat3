@@ -192,8 +192,8 @@ mysock_t cmdCurrent(int fd, char *rest) {
 	
 	logabba(L_INFO, "Decoding <%s>", rest);
 	
-	if (2!=sscanf(rest, "%i", &newcurrent)) {
-		writeFd(fd, "Could not decode your message <%s>", rest);
+	if (1!=sscanf(rest, "%i", &newcurrent)) {
+		writeFd(fd, "Currently charging to %imA", getCurrent());
 		return MYSOCK_OKAY;
 	}
 	
