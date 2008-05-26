@@ -49,6 +49,8 @@ struct bat3 {
 int getAddress();
 int getCurrent();
 int setCurrent(int i);
+int getLoglevel();
+int setLoglevel();
 
 #endif
 

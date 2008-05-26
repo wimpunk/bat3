@@ -127,6 +127,7 @@ void cmdHelp(int fd) {
 	writeFd(fd, " bat: get battery state" );
 	writeFd(fd, " state: get current state (complete array)");
 	writeFd(fd, " current i: set new target current to i");
+	writeFd(fd, " loglevel i: set loglevel to i")
 	writeFd(fd, " quit: close this connection");
 	writeFd(fd, " exit: end the bat3 program");
 	logabba(L_NOTICE, "Wrote help msg to %i", fd);
@@ -188,7 +189,6 @@ mysock_t cmdState(int fd, char *rest) {
 
 mysock_t cmdCurrent(int fd, char *rest) {
 	
-	char msg[256];
 	int newcurrent;
 	
 	logabba(L_INFO, "Decoding <%s>", rest);
@@ -203,6 +203,25 @@ mysock_t cmdCurrent(int fd, char *rest) {
 	writeFd(fd, "Changing current from %i to %i", getCurrent(), newcurrent);
 	setCurrent(newcurrent);
 	writeFd(fd, "New current set to %i", getCurrent());
+	
+	return MYSOCK_OKAY;
+	
+}
+
+mysock_t cmdLoglevel(int fd, char*rest) {
+	
+	int newloglevel; 
+	
+	if (1!=sscanf(rest, "%i", &newloglevel)) {
+		writeFd(fd, "Currently loglevel to %i", getLoglevel());
+		return MYSOCK_OKAY;
+	}
+	
+	logabba(L_INFO, "Changing loglevel from %i to %i", getLoglevel(), newloglevel);
+	
+	writeFd(fd, "Changing loglevel from %i to %i", getLoglevel(), newloglevel);
+	setCurrent(newloglevel);
+	writeFd(fd, "New loglevel set to %i", getLoglevel());
 	
 	return MYSOCK_OKAY;
 	
@@ -253,6 +272,8 @@ mysock_t readSocket(int fd) {
 		ret = cmdState(fd, buffer);
 	} else if (cmd[0] == 'c') {
 		ret = cmdCurrent(fd, buffer);
+	} else if (cmd[0] == 'l' ) {
+		ret = cmdLoglevel(fd, buffer);
 	} else {
 		writeFd(fd, "I got your message but didn't understand it: <%s>", cmd);
 		writeFd(fd, "You could try help");
@@ -414,7 +435,7 @@ int writeFd(int fd, const char *msg, ...) {
 	
 	va_end(v);
 	
-	if ( strcmp(msg,PROMPT)!=0 ) {
+	if ( strcmp(msg, PROMPT)!=0 ) {
 		send(fd, "\n", strlen("\n"), MSG_DONTWAIT);
 	}
 	
