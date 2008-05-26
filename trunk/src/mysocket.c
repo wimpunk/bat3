@@ -27,6 +27,7 @@
 #endif
 
 #define MAXSFD 128
+#define PROMPT "> "
 static int writePrompt(int fd);
 static int writeFd(int fd, const char *msg, ...);
 
@@ -99,7 +100,7 @@ static int acceptSocket(int sockfd) {
 		fprintf(stderr, "ERROR on accept");
 	} else {
 		logabba(L_MIN, "Accepted connection");
-		if (writeFd(newsockfd, "Welcome to bat3 (%s-%s) on fd %d\n", VERSION, REV, newsockfd)>0) {
+		if (writeFd(newsockfd, "Welcome to bat3 (%s-%s) on fd %d", VERSION, REV, newsockfd)>0) {
 			logabba(L_NOTICE, "Wrote info message to fd %d", newsockfd);
 		} else {
 			logabba(L_NOTICE, "Failed writing info message to fd %d");
@@ -122,26 +123,26 @@ static int acceptSocket(int sockfd) {
 
 void cmdHelp(int fd) {
 	
-	writeFd(fd, "Available commands:\n");
-	writeFd(fd, " bat: get battery state\n" );
-	writeFd(fd, " state: get current state (complete array)\n");
-	writeFd(fd, " current i: set new target current to i\n");
-	writeFd(fd, " quit: close this connection\n");
-	writeFd(fd, " exit: end the bat3 program\n");
+	writeFd(fd, "Available commands:");
+	writeFd(fd, " bat: get battery state" );
+	writeFd(fd, " state: get current state (complete array)");
+	writeFd(fd, " current i: set new target current to i");
+	writeFd(fd, " quit: close this connection");
+	writeFd(fd, " exit: end the bat3 program");
 	logabba(L_NOTICE, "Wrote help msg to %i", fd);
 	
 }
 
 mysock_t cmdQuit(int fd, char *rest) {
 	
-	writeFd(fd, "Have a nice day.\n");
+	writeFd(fd, "Have a nice day.");
 	close(fd);
 	
 	return MYSOCK_QUIT;
 }
 
 mysock_t cmdEnd(int fd, char *rest) {
-	writeFd(fd, "I'll stop working\n");
+	writeFd(fd, "I'll stop working");
 	return MYSOCK_END;
 }
 
@@ -150,9 +151,9 @@ mysock_t cmdRead(int fd, char *rest) {
 	int address;
 	
 	if (sscanf(rest, "%d", &address)!=1)
-		writeFd(fd, "Sorry, couldn't decode <%s> to a integer\n", rest);
+		writeFd(fd, "Sorry, couldn't decode <%s> to a integer", rest);
 	else{
-		writeFd(fd, "I'll read %d\n", address);
+		writeFd(fd, "I'll read %d", address);
 		getAddress(address);
 	}
 	
@@ -170,8 +171,8 @@ mysock_t cmdBat(int fd, char *rest) {
 		val = print_onoff(getBatRun());
 	}
 	
-	writeFd(fd, "BatRun: %s\n", val);
-	// writeFd(fd, "BatRun: %04X\n", getBatI());
+	writeFd(fd, "BatRun: %s", val);
+	// writeFd(fd, "BatRun: %04X", getBatI());
 	
 	return MYSOCK_OKAY;
 	
@@ -179,7 +180,7 @@ mysock_t cmdBat(int fd, char *rest) {
 
 mysock_t cmdState(int fd, char *rest) {
 	
-	writeFd(fd, "checking state\n");
+	writeFd(fd, "checking state");
 	print_bat3(fd, getState());  // struct bat3* mybat3) {
 	
 	return MYSOCK_OKAY;
@@ -223,7 +224,7 @@ mysock_t readSocket(int fd) {
 	n = sscanf(buffer, "%s %s", cmd, buffer);
 	switch (n) {
 		case 0:
-			writeFd(fd, "No command decoded\n");
+			writeFd(fd, "No command decoded");
 			break;
 		case 1:
 			// writeFd(fd, "your command  = <%s>", cmd);
@@ -233,7 +234,7 @@ mysock_t readSocket(int fd) {
 			break;
 		default:
 			logabba(L_MIN, "Could not decode your message: %s", buffer);
-			writeFd(fd, "Could not decode your message: [%s]\n", buffer);
+			writeFd(fd, "Could not decode your message: [%s]", buffer);
 	}
 	
 	if (n<=1) buffer[0] = 0;
@@ -253,8 +254,8 @@ mysock_t readSocket(int fd) {
 	} else if (cmd[0] == 'c') {
 		ret = cmdCurrent(fd, buffer);
 	} else {
-		writeFd(fd, "I got your message but didn't understand it: <%s>\n", cmd);
-		writeFd(fd, "You could try help\n");
+		writeFd(fd, "I got your message but didn't understand it: <%s>", cmd);
+		writeFd(fd, "You could try help");
 	}
 	
 	if ((ret!=MYSOCK_END) && (ret!=MYSOCK_QUIT)) writePrompt(fd);
@@ -363,7 +364,7 @@ mysock_t processMySocket() {
 
 static int writePrompt(int fd) {
 	
-	return writeFd(fd, "> ");
+	return writeFd(fd, PROMPT);
 	
 }
 
@@ -412,6 +413,10 @@ int writeFd(int fd, const char *msg, ...) {
 	}
 	
 	va_end(v);
+	
+	if ( strcmp(msg,PROMPT)!=0 ) {
+		send(fd, "\n", strlen("\n"));
+	}
 	
 	return cnt;
 	
