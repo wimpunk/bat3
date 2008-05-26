@@ -415,7 +415,7 @@ int writeFd(int fd, const char *msg, ...) {
 	va_end(v);
 	
 	if ( strcmp(msg,PROMPT)!=0 ) {
-		send(fd, "\n", strlen("\n"));
+		send(fd, "\n", strlen("\n"), MSG_DONTWAIT);
 	}
 	
 	return cnt;
