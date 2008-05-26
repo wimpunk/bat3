@@ -191,10 +191,17 @@ mysock_t cmdCurrent(int fd, char *rest) {
 	int newcurrent;
 	
 	logabba(L_INFO, "Decoding <%s>", rest);
-	sscanf(rest, "%s %i", msg, &newcurrent);
+	
+	if (2!=sscanf(rest, "%s %i", msg, &newcurrent)) {
+		writeFd("Could not decode your message <%s>", rest);
+		return MYSOCK_OKAY;
+	}
+	
 	logabba(L_INFO, "Changing current from %i to %i", getCurrent(), newcurrent);
 	
+	writeFd(fd, "Changing current from %i to %i", getCurrent(), newcurrent);
 	setCurrent(newcurrent);
+	writeFd(fd, "New current set to %i", getCurrent());
 	
 	return MYSOCK_OKAY;
 	
@@ -244,7 +251,7 @@ mysock_t readSocket(int fd) {
 	} else if ((strcmp(cmd, "state")==0) || (strcmp(cmd, "s")==0)) {
 		ret = cmdState(fd, buffer);
 	} else if (cmd[0] == 'c') {
-		ret = cmdCurrent(fd,buffer);
+		ret = cmdCurrent(fd, buffer);
 	} else {
 		writeFd(fd, "I got your message but didn't understand it: <%s>\n", cmd);
 		writeFd(fd, "You could try help\n");
