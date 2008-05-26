@@ -98,6 +98,16 @@ int getCurrent() {
 	
 }
 
+int setLoglevel(int i) {
+	setloglevel(i, "bat3");
+	
+	return i;
+}
+
+int getLoglevel() {
+	return getloglevel();
+}
+
 static int getsample(int fd, struct bat3 *sample, FILE *logfile) {
 	
 	struct bat3 temp;
