@@ -115,7 +115,6 @@ int fdprintf(int fd, char* fmt, ...)
 }
 
 void print_bat3(int fd, struct bat3* mybat3) {
-	
 	if (fd>0) {
 		fdprintf(fd, "->print_bat3\n");
 		fdprintf(fd, "input supply voltage     = %04X (%3.2fV)\n",  mybat3->inp_u, 0.70/1000 * (mybat3->inp_u)); //
@@ -186,7 +185,7 @@ int decodemsg(char *msg, int size, struct bat3* mybat3, FILE* logfile) {
 	
 	 
 	// TODO: this should be done nicer
-	print_bat3(logfile->_fileno, mybat3);
+	print_bat3(logfile?logfile->_fileno:-1, mybat3);
 	
 	return 0;
 	
