@@ -6,14 +6,14 @@
  * $Author$
  *
  * */
+#include <stdarg.h>
+#include <string.h>
+#include <stdio.h>
+#include <unistd.h>
+
 #include "convert.h"
 #include "log.h"
 #include "tsbat3.h"
-#include <stdarg.h>
-#include <unistd.h>
-#include <string.h>
-
-#include "stdio.h"
 
 float adcV(unsigned short ticks) {
 	/* According to http://tech.groups.yahoo.com/group/ts-7000/message/5402
