@@ -101,13 +101,13 @@ static void print_BAT3reply(FILE *fd, struct BAT3reply* reply) {
 	}
 }
 
-int fdprintf(int fd, char* fmt, ...)
+static int fdprintf(int fd, char* fmt, ...)
 {
 	va_list args;
 	char line[256];
 	
 	va_start(args,fmt);
-	snprintf(line, sizeof(line), fmt, args);
+	vsnprintf(line, sizeof(line), fmt, args);
 	va_end(args);
 	
 	return write(fd, line, strlen(line));
