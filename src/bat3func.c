@@ -44,7 +44,7 @@ void doload(struct bat3* state, int target) {
 	
 	int diff;
 	int newpwm;
-	int pwmdiff;
+	// int pwmdiff;
 	
 	
 	if (state->batRun == ON) {
@@ -86,14 +86,19 @@ void doload(struct bat3* state, int target) {
 		logabba(L_NOTICE, "Doload: target=%imA, current=%imA" , target, battI(state->bat_i)/1000);
 		
 		diff = target - battI(state->bat_i)/1000;   // difference between wanted & current
-		pwmdiff = (state->pwm_t - state->pwm_lo)/2; // if difference is big enough, we change it logarithmic
+		// pwmdiff = abs(state->pwm_t - state->pwm_lo)/2; // if difference is big enough, we change it logarithmic
+		// if (pwmdiff < 2 ) pwmdiff = 2;
 		
 		newpwm = state->pwm_lo;
 		
 		if (diff>100) {
-			newpwm -= pwmdiff;
+			// newpwm -= pwmdiff);
+			newpwm -= 10;
+			logabba(L_NOTICE, "Doload: diff>100, newpwm = %04X", newpwm);
 		} else if (diff<-100) {
-			newpwm += pwmdiff;
+			// newpwm += pwmdiff;
+			newpwm += 10;
+			logabba(L_NOTICE, "Doload: diff<-100, newpwm = %04X", newpwm);
 		} else if (diff>50) {
 			newpwm -= 1;
 		} else if (diff<-50) {
