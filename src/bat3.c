@@ -29,8 +29,6 @@
 #include "bat3func.h"
 #include "mysocket.h"
 
-// #include "tsbat3.h"
-
 #define BAT3DEV "/dev/ttyTS0"
 #define DEFAULT_LOGLEVEL L_STD
 #define DEFAULT_SAMPLES  10
@@ -50,42 +48,10 @@ char *print_onoff(onoff_t onoff) {
 	}
 	return NULL;
 }
-/*
- * void writemsg(int fd, char* msg, int len, int read)
- * {
- *
- *
- * // OP AMP must be enabled for charging to work
- * req.opampEn = 1;
- * req._buckEn = 1;
- * req._offsetEn = 1;
- * req.checksum = calcCrc((char*)&req, sizeof(req)-1);
- *
- * cnt = write(fd, (void *)&req, sizeof(req));
- *
- * logabba(L_MAX, "Write returned %d", cnt);
- *
- * // OP AMP must be enabled for charging to work
- * req.opampEn = 1;
- * req.PWM1en = 1;
- * req.PWM2en = 1;
- * req._buckEn = 1;
- * req._offsetEn = 1;
- *
- * req.outputs = rep->outputs;
- * req.alarm   = 0;
- * req.softJP3 = 0;
- * req.pwm_lo  = rep->pwm_lo;
- * req.pwm_t   = rep->pwm_t;
- *
- *
- * return;
- * }
- */
 
 int setCurrent(int i) {
 	
-	if ((i<0) || (i>1000)) current = DEFAULT_CURRENT;
+	if ((i<0) || (i>2000)) current = DEFAULT_CURRENT;
 	else current = i;
 	
 	return current;
@@ -102,10 +68,13 @@ int setLoglevel(int i) {
 	setloglevel(i, "bat3");
 	
 	return i;
+	
 }
 
 int getLoglevel() {
+	
 	return getloglevel();
+	
 }
 
 static int getsample(int fd, struct bat3 *sample, FILE *logfile) {
@@ -125,7 +94,6 @@ static int getsample(int fd, struct bat3 *sample, FILE *logfile) {
 			continue;
 		}
 		
-		// if (logfile == NULL ) logabba(L_MIN, "Logfile == NULL");
 		if (decodemsg(msg, cnt, &temp, logfile)!=0) {
 			logabba(L_MIN, "Could not decodemsg, error=%d", error);
 			error++;
@@ -143,11 +111,13 @@ static int getsample(int fd, struct bat3 *sample, FILE *logfile) {
 	}
 	
 	logabba(L_MIN, "Could not get a sample after error=%d tries ", error);     ;
+	
 	return 0;
 	
 }
 
 static void usage(char *progname) {
+	
 	printf("\n");
 	printf("Usage:\n");
 	printf("\n");
@@ -164,31 +134,18 @@ static void usage(char *progname) {
 	printf("\n");
 	printf("(bat3 release %s-r%s)\n", VERSION, REV);
 	printf("\n");
+	
 }
-
-/*
- * static void flush(int fd) {
- * int cnt=0;
- * char c;
- * while ((read(fd, &c, 1))>0) cnt++;
- * logabba(L_MAX, "Flush was reading %d bytes", cnt);
- * }
- */
-
 
 int doRound(int fd, struct bat3 *sample, int current, FILE *logfile) {
 	
 	struct bat3 state = *sample;
 	int cnt;
 	char msg[56];
-	// while ((cntsamples<samples) || (samples == -1))	{
-	
-	// TODO: quick hack
-	// if ((cntsamples == 0))
-	// state.softJP3 = ON;
 	
 	logabba(L_INFO, "Original led: %s", print_onoff(state.led));
 	// Even when running on batteries, we have to kietel the opamp
+	
 	if (state.batRun == ON) {
 		state.led = OFF;
 		doload(&state, current);
@@ -197,7 +154,9 @@ int doRound(int fd, struct bat3 *sample, int current, FILE *logfile) {
 		doload(&state, current);
 		logabba(L_NOTICE, "Switching led to %s", print_onoff(state.led));
 	}
+	
 	logabba(L_INFO, "will encode led: %s", print_onoff(state.led));
+	
 	if ((cnt = encodemsg(msg, sizeof(msg), &state))) {
 		logabba(L_INFO, "Writing msg");
 		writeStream(fd, msg, cnt);
@@ -205,7 +164,6 @@ int doRound(int fd, struct bat3 *sample, int current, FILE *logfile) {
 	
 	cnt=0;
 	
-	//    prevstate = state;
 	while (!getsample(fd, &state, logfile) && cnt<MAX_RETRIES) {
 		cnt++;
 	}
@@ -214,23 +172,22 @@ int doRound(int fd, struct bat3 *sample, int current, FILE *logfile) {
 		logabba(L_MIN, "Did not get a sample even after retrying %d times", cnt);
 		return -1;
 	}
+	
 	logabba(L_INFO, "got state led: %s", print_onoff(state.led));
 	*sample = state;
 	logabba(L_INFO, "got sample led: %s", print_onoff(sample->led));
-	
-	// usleep(100);
 	
 	return 0;
 	
 }
 
 int main(int argc, char *argv[]) {
+	
 	int c, fd;
 	char device[50]=""; // device to use
 	
 	int errcnt=0;
 	
-	//    int cnt,
 	int cntsamples;
 	
 	int loglevel = DEFAULT_LOGLEVEL;
@@ -238,7 +195,6 @@ int main(int argc, char *argv[]) {
 	
 	int address  = DEFAULT_ADDRESS;
 	int portno   = DEFAULT_PORT;
-	
 	
 	int read  = 0;
 	int write = 0;
@@ -310,11 +266,7 @@ int main(int argc, char *argv[]) {
 	
 	setPortno(portno);
 	
-	// fprintf(stdout, "opening port returned %d", socketfd);
-	
-	
 	if ((samples<-1)) samples = DEFAULT_SAMPLES;
-	
 	
 	setloglevel(loglevel, "bat3");
 	
@@ -383,14 +335,10 @@ int main(int argc, char *argv[]) {
 		
 		gettimeofday(&now, NULL);
 		
-		// logabba(L_MIN, "Would sleep during %d usec",
 		val = 25 * 1000 - ( now.tv_sec - lastrun.tv_sec ) * 1000 * 1000 -  ( now.tv_usec - lastrun.tv_usec );
 		if (val <= 0 ) val = 0;
 		usleep(val);
-		// logabba(L_MIN, "  diff sec: %d", now.tv_sec  - lastrun.tv_sec);
-		// logabba(L_MIN, " udiff sec: %d", now.tv_usec - lastrun.tv_usec);
-		// usleep(100 * 1000);
-		// usleep (20000);
+
 	}
 	
 	close(fd);
