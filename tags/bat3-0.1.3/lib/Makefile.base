@@ -1,0 +1,17 @@
+U=../..
+include ${U}/Makefile.common
+
+all:  ByteArray.o serial.o IntArray.o file.o Process.o term.o net.o
+
+CFLAGS= -g -I/home/michael/C/gc/include
+
+ByteArray.o: ../ByteArray.h ../base.h
+IntArray.o: ../IntArray.h ../base.h
+serial.o: ../serial.h ../ByteArray.h ../base.h
+file.o: ../file.h  ../ByteArray.h ../IntArray.h ../base.h
+Process.o: ../Process.h ../base.h
+net.o: ../net.h ../ByteArray.h ../base.h
+term.o: ../term.h
+
+clean:
+	rm -f *.o
