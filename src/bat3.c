@@ -307,18 +307,27 @@ int main(int argc, char *argv[]) {
 			
 			if (read) doread(&state, address);
 			if (write) dowrite(&state, address, value);
-			gettimeofday(&lastrun, NULL);
+			
+			gettimeofday(&lastrun, NULL); //needed to calculate the wait time
 			
 			doRound(fd, &state, current, logfile);
-			cntsamples++;
-			if (cntsamples==3 && read) {
+			if (!((samples == -1) && (cntsamples>10000))) cntsamples++;
+			
+			
+			if (read && cntsamples==3) {
 				logabba(L_MIN, "Reading from address %i: %04X=%04X", address, state.ee_addr, state.ee_data);
 			}
 			
+			// checking switched states
 			if (state.batRun != prevstate.batRun) {
 				logabba(L_MIN, "Running on %s", state.batRun==ON?"batteries":"current" );
 			}
 			
+			if (state.softJP3 != prevstate.softJP3) {
+				logabba(L_MIN, "Soft JP3 switched to %s after %i samples", print_onoff(state.softJP3), cntsamples );
+			}
+			
+			// setting waittime for select
 			tv.tv_sec  = FlushTime/1000000;
 			tv.tv_usec = FlushTime%1000000;
 			
