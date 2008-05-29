@@ -71,7 +71,7 @@ void doload(struct bat3* state, int target) {
 	} else {
 		
 		if (state->softJP3 == ON) {
-			// logabba(L_MIN, "Switching softJP3 OFF, softjp3=%s",print_onoff(state->softJP3));
+			logabba(L_MIN, "Switching softJP3 OFF, softjp3=%s",print_onoff(state->softJP3));
 			state->softJP3 = OFF;
 		}
 		
