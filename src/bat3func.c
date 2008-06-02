@@ -61,9 +61,12 @@ void doload(struct bat3* state, int target) {
 	 state->PWM1en   = OFF;
 	 state->PWM2en   = OFF;
 		 */
-		state->opampEn  = ON;
-		// state->PWM1en   = OFF;
-		// state->PWM2en   = OFF;
+		
+		// Not sure if we need this 
+		state->opampEn  = OFF;
+		state->PWM1en   = OFF;
+		state->PWM2en   = OFF;
+		
 		state->buckEn = OFF;
 		state->offsetEn = OFF;
 		
