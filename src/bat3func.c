@@ -14,9 +14,9 @@
 #include "log.h"
 #include "convert.h"
 
-/*
- * TODO Need 2 find a solution for this
- */
+#define MAX_PWM_T 0x0200   // max pwm_t
+#define MIN_PWM_T 0x0100   // min pwm_min with default current
+#define DEFTARGET    400   // default target current
 
 struct bat3 curState;
 
@@ -44,25 +44,26 @@ void doload(struct bat3* state, int target) {
 	
 	int diff;
 	int newpwm;
+	int freese = 0;
 	// int pwmdiff;
 	
 	
 	if (state->batRun == ON) {
 		if (state->softJP3 == ON) {
 			// TODO: I think I'm some bytes somewhere.  I always have to set this byte
-			// logabba(L_MIN, "Switching softJP3 OFF, softjp3=%s",print_onoff(state->softJP3));
+			logabba(L_MIN, "Switching softJP3 OFF, softjp3=%s", print_onoff(state->softJP3));
 			state->softJP3 = OFF;
 		}
 		logabba(L_INFO, "Running on batt...");
 		// state->opampEn  = OFF;  // i think this halts the battery function
 		/* Currently the system stops when running on batteries... we'll remove this lines
-	 
-	 state->opampEn  = OFF;
-	 state->PWM1en   = OFF;
-	 state->PWM2en   = OFF;
+		 *
+		 * state->opampEn  = OFF;
+		 * state->PWM1en   = OFF;
+		 * state->PWM2en   = OFF;
 		 */
 		
-		// Not sure if we need this 
+		// Not sure if we need this
 		state->opampEn  = OFF;
 		state->PWM1en   = OFF;
 		state->PWM2en   = OFF;
@@ -74,7 +75,7 @@ void doload(struct bat3* state, int target) {
 	} else {
 		
 		if (state->softJP3 == ON) {
-			logabba(L_MIN, "Switching softJP3 OFF, softjp3=%s",print_onoff(state->softJP3));
+			logabba(L_MIN, "Switching softJP3 OFF, softjp3=%s", print_onoff(state->softJP3));
 			state->softJP3 = OFF;
 		}
 		
@@ -84,7 +85,7 @@ void doload(struct bat3* state, int target) {
 		state->PWM2en   = ON;
 		state->buckEn   = OFF;
 		state->offsetEn = OFF;
-		state->pwm_t    = 500;
+		state->pwm_t    = MAX_PWM_T;
 		
 		logabba(L_NOTICE, "Doload: target=%imA, current=%imA" , target, battI(state->bat_i)/1000);
 		
@@ -108,10 +109,26 @@ void doload(struct bat3* state, int target) {
 			newpwm += 1;
 		}
 		
-		if (newpwm<0) newpwm = 0;
+		// preventing going to low and overcharge battery.
+		if ( target == DEFTARGET) {
+			if (newpwm < MIN_PWM_T) {
+				freese = 1;
+				newpwm = MIN_PWM_T;
+			}
+		} else {
+			// this one is dangerous
+			if (newpwm < 0) {
+				newpwm = 0;
+				freese = 1;
+			}
+			
+		}
+		
+		// you can't go highter than the top
 		if (newpwm>state->pwm_t) newpwm = state->pwm_t;
 		
 		logabba(L_INFO,  "Changing pwm_lo from %04X to %04X", state->pwm_lo, newpwm);
+		if (!freese) state->updated = time(NULL);
 		state->pwm_lo = newpwm;
 		
 	}
@@ -197,7 +214,6 @@ int getAddress() {
 	return -1;
 }
 
-struct bat3* getState()
-{
+struct bat3* getState() {
 	return &curState;
 }
