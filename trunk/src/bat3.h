@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include "log.h"
+#include <time.h>
 
 typedef enum {
 	ON,
@@ -43,6 +44,8 @@ struct bat3 {
 	onoff_t ee_write;
 	onoff_t ee_ready;
 	onoff_t softJP3;
+	
+	time_t  updated;
 
 };
 
