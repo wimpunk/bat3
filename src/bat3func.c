@@ -40,6 +40,14 @@ void changeled(struct bat3* state) {
 	}
 }
 
+static void switch_opamp(struct bat3* state, onoff_t sw) {
+	
+	state->opampEn  = sw;
+	state->PWM1en   = sw;
+	state->PWM2en   = sw;
+	
+}
+
 void doload(struct bat3* state, int target) {
 	
 	int diff;
@@ -49,27 +57,17 @@ void doload(struct bat3* state, int target) {
 	
 	
 	if (state->batRun == ON) {
+		
 		if (state->softJP3 == ON) {
-			// TODO: I think I'm some bytes somewhere.  I always have to set this byte
-			logabba(L_MIN, "Switching softJP3 OFF, softjp3=%s", print_onoff(state->softJP3));
+			logabba(L_MIN, "Switching softJP3 OFF, softjp3=%s",
+					print_onoff(state->softJP3));
 			state->softJP3 = OFF;
 		}
 		logabba(L_INFO, "Running on batt...");
-		// state->opampEn  = OFF;  // i think this halts the battery function
-		/* Currently the system stops when running on batteries... we'll remove this lines
-		 *
-		 * state->opampEn  = OFF;
-		 * state->PWM1en   = OFF;
-		 * state->PWM2en   = OFF;
-		 */
-		
-		// Not sure if we need this
-		state->opampEn  = OFF;
-		state->PWM1en   = OFF;
-		state->PWM2en   = OFF;
-		
+		switch_opamp(state, OFF);
 		state->buckEn = OFF;
 		state->offsetEn = OFF;
+		state->updated = time(NULL);
 		
 		
 	} else {
@@ -80,56 +78,64 @@ void doload(struct bat3* state, int target) {
 		}
 		
 		logabba(L_NOTICE, "NOT running on batt...");
-		state->opampEn  = ON;
-		state->PWM1en   = ON;
-		state->PWM2en   = ON;
-		state->buckEn   = OFF;
-		state->offsetEn = OFF;
-		state->pwm_t    = MAX_PWM_T;
 		
-		logabba(L_NOTICE, "Doload: target=%imA, current=%imA" , target, battI(state->bat_i)/1000);
-		
-		diff = target - battI(state->bat_i)/1000;   // difference between wanted & current
-		// pwmdiff = abs(state->pwm_t - state->pwm_lo)/2; // if difference is big enough, we change it logarithmic
-		// if (pwmdiff < 2 ) pwmdiff = 2;
-		
-		newpwm = state->pwm_lo;
-		
-		if (diff>100) {
-			// newpwm -= pwmdiff);
-			newpwm -= 10;
-			logabba(L_NOTICE, "Doload: diff>100, newpwm = %04X", newpwm);
-		} else if (diff<-100) {
-			// newpwm += pwmdiff;
-			newpwm += 10;
-			logabba(L_NOTICE, "Doload: diff<-100, newpwm = %04X", newpwm);
-		} else if (diff>50) {
-			newpwm -= 1;
-		} else if (diff<-50) {
-			newpwm += 1;
-		}
-		
-		// preventing going to low and overcharge battery.
-		if ( target == DEFTARGET) {
-			if (newpwm < MIN_PWM_T) {
-				freese = 1;
-				newpwm = MIN_PWM_T;
-			}
+		diff = time(NULL) - state->updated;
+		if (( diff > 30*60 ) && (diff < 12*60*60 ))  {
+			if (state->opampEn  == ON) logabba(L_MIN, "I stop loading");
+			switch_opamp(state, OFF);
 		} else {
-			// this one is dangerous
-			if (newpwm < 0) {
-				newpwm = 0;
-				freese = 1;
+			if (state->opampEn  == OFF) logabba(L_MIN, "I start loading");
+			switch_opamp(state, ON);
+			
+			state->buckEn   = OFF;
+			state->offsetEn = OFF;
+			state->pwm_t    = MAX_PWM_T;
+			
+			logabba(L_NOTICE, "Doload: target=%imA, current=%imA" , target, battI(state->bat_i)/1000);
+			
+			diff = target - battI(state->bat_i)/1000;   // difference between wanted & current
+			// pwmdiff = abs(state->pwm_t - state->pwm_lo)/2; // if difference is big enough, we change it logarithmic
+			// if (pwmdiff < 2 ) pwmdiff = 2;
+			
+			newpwm = state->pwm_lo;
+			
+			if (diff>100) {
+				// newpwm -= pwmdiff);
+				newpwm -= 10;
+				logabba(L_NOTICE, "Doload: diff>100, newpwm = %04X", newpwm);
+			} else if (diff<-100) {
+				// newpwm += pwmdiff;
+				newpwm += 10;
+				logabba(L_NOTICE, "Doload: diff<-100, newpwm = %04X", newpwm);
+			} else if (diff>50) {
+				newpwm -= 1;
+			} else if (diff<-50) {
+				newpwm += 1;
 			}
 			
+			// preventing going to low and overcharge battery.
+			if ( target == DEFTARGET) {
+				if (newpwm < MIN_PWM_T) {
+					freese = 1;
+					newpwm = MIN_PWM_T;
+				}
+			} else {
+				// this one is dangerous
+				if (newpwm < 0) {
+					newpwm = 0;
+					freese = 1;
+				}
+				
+			}
+			
+			// you can't go highter than the top
+			if (newpwm>state->pwm_t) newpwm = state->pwm_t;
+			
+			logabba(L_INFO,  "Changing pwm_lo from %04X to %04X", state->pwm_lo, newpwm);
+			if (!freese) state->updated = time(NULL);
+			state->pwm_lo = newpwm;
+			
 		}
-		
-		// you can't go highter than the top
-		if (newpwm>state->pwm_t) newpwm = state->pwm_t;
-		
-		logabba(L_INFO,  "Changing pwm_lo from %04X to %04X", state->pwm_lo, newpwm);
-		if (!freese) state->updated = time(NULL);
-		state->pwm_lo = newpwm;
 		
 	}
 }
