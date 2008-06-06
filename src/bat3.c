@@ -137,20 +137,29 @@ static void usage(char *progname) {
 	
 }
 
+/*
+ * doRound creates a structure based on the current state found in sample
+ * and writes the result to the TS-BAT3 which should return a new sample.
+ * TODO: it should also contain the reading and writing to eeprom.
+ */
 int doRound(int fd, struct bat3 *sample, int current, FILE *logfile) {
 	
 	struct bat3 state = *sample;
 	int cnt;
 	char msg[56];
 	
+	
 	logabba(L_INFO, "Original led: %s", print_onoff(state.led));
 	// Even when running on batteries, we have to kietel the opamp
-	
+	// TODO: is this still correct?  I think we just have to write
+	// some info to the battery within 2 minutes and wait for reaction.
 	if (state.batRun == ON) {
 		state.led = OFF;
 		doload(&state, current);
 	} else {
 		changeled(&state);
+		// TODO: we should pass more info about the current loading state
+		// to the battery
 		doload(&state, current);
 		logabba(L_NOTICE, "Switching led to %s", print_onoff(state.led));
 	}
@@ -273,6 +282,10 @@ int main(int argc, char *argv[]) {
 	logabba(L_MIN, "%s (Ver %s) started, loglevel %i, getting %d samples, using %imA to load, listening to port %d",
 			argv[0], VERSION, loglevel, samples, current, portno);
 	
+	// TODO: this should be done in a separate function
+	
+	// initialising 
+	// we need an inital value so we get a sample
 	if (!getsample(fd, &state, logfile)) {
 		logabba(L_MIN, "Did not get a sample");
 		return 0;
@@ -310,21 +323,26 @@ int main(int argc, char *argv[]) {
 			
 			gettimeofday(&lastrun, NULL); //needed to calculate the wait time
 			
+			// TODO: we should verify the value of doRound.  When it returns
+			// -1 it can't communicate with the TS-BAT3
 			doRound(fd, &state, current, logfile);
 			if (!((samples == -1) && (cntsamples>10000))) cntsamples++;
 			
 			
 			if (read && cntsamples==3) {
-				logabba(L_MIN, "Reading from address %i: %04X=%04X", address, state.ee_addr, state.ee_data);
+				logabba(L_MIN, "Reading from address %i: %04X=%04X", 
+						address, state.ee_addr, state.ee_data);
 			}
 			
 			// checking switched states
 			if (state.batRun != prevstate.batRun) {
-				logabba(L_MIN, "Running on %s", state.batRun==ON?"batteries":"current" );
+				logabba(L_MIN, "Running on %s", 
+						state.batRun==ON?"batteries":"current" );
 			}
 			
 			if (state.softJP3 != prevstate.softJP3) {
-				logabba(L_MIN, "Soft JP3 switched to %s after %i samples", print_onoff(state.softJP3), cntsamples );
+				logabba(L_MIN, "Soft JP3 switched to %s after %i samples", 
+						print_onoff(state.softJP3), cntsamples );
 			}
 			
 			// setting waittime for select
