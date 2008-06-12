@@ -13,26 +13,40 @@ void changeled(struct bat3* state);
 // should be changed by one do-action function
 // which uses the current state and modifies it
 // to the wanted state
-void doload(struct bat3* state, int target); 
+void doload(struct bat3* state, int target);
 void doread(struct bat3* state, int address);
 void dowrite(struct bat3* state, int address, int value);
 
 void setBatState(struct bat3* newState);
 int getBatI();
-struct bat3* getState();	
+struct bat3* getState();
 onoff_t getBatRun();
 
 struct action {
 	
-/* this should contain the action we want to take:
- * load
- * read
- * write
- */
+	/* this should contain the action we want to take:
+	 * load
+	 * read
+	 * write
+	 */
+	
+	char device[50];
+	
 	int current;
 	int read;
 	int write;
 	int address;
+	
+	FILE *logfile;
+	int loglevel;
+	int portno;
+	
+	int value;
+		
+		int samples;
+	int socketfd;
+	
+	
 	
 };
 #endif
