@@ -53,3 +53,5 @@ EXTRA_DIST=bat3.lsm.in
 #
 ##  install the man page
 #man_MANS=bat3.1
+REVISION= svn info .. | grep 'Revision: '| cut -d ' ' -f2
+
