@@ -98,7 +98,6 @@ static int calc_load(struct bat3* state, struct action* target) {
     if (newpwm > state->pwm_t) newpwm = state->pwm_t;
 
     logabba(L_INFO, "Changing pwm_lo from %04X to %04X", state->pwm_lo, newpwm);
-    logabba(L_MIN, "Changing pwm_lo from %04X to %04X", state->pwm_lo, newpwm);
 
     state->pwm_lo = newpwm;
 
@@ -117,34 +116,73 @@ static void process_first_degree(struct action* target) {
 
     int pos;
     float newweight;
+    
 
     // calculate the new weight
+    logabba(L_MIN, "process will add avg=%d", target->min[(target->mincnt) - 1]);
+    
     if (!(target->weightpos)) {
         newweight = target->min[(target->mincnt) - 1];
     } else {
-        // TODO: is this -2 always correct?
         newweight =
-                target->min[(target->mincnt) - 1]*(1 - FILTER) +
-                target->min[(target->mincnt) - 2]*FILTER;
-    }
+                (target->min[(target->mincnt) - 1])*(FILTER) +
+                (target->weight[(target->weightpos) - 1])*(1-FILTER);
+        logabba(L_MIN, "New weight: %d*(FILTER)+(%0.2f*(1-FILTER))=%0.2f", 
+                target->min[(target->mincnt) - 1],
+                target->weight[(target->weightpos) - 1],
+            newweight);
     
+    }
+
     // this should be the new position
     // but we need to verify if there's still if there's  still room.
-    target->weightpos+=1;
-    if ((target->weightpos)==MAXMIN) {
+    target->weightpos += 1;
+    if ((target->weightpos) == MAXMIN) {
         // the end, shift the values!
-        for (pos=1; pos<MAXMIN; pos++) target->weight[pos-1] = target->weight[pos];
-        target->weightpos -= 1;                
+        for (pos = 1; pos < MAXMIN; pos++) target->weight[pos - 1] = target->weight[pos];
+        target->weightpos -= 1;
     }
-    
-    // bring them together: new value on the correct place
-    target->weight[target->weightpos] = newweight;
 
+    // bring them together: new value on the correct place
+    logabba(L_MIN, "New weight: %0.2f", newweight);
+    target->weight[target->weightpos-1] = newweight;
+
+}
+
+int check_stable(struct action *target) {
+    // checks if we're loading stable
+    float curr, prev, diff;
+
+    curr = target->weight[(target->weightpos) - 1];
+    prev = target->weight[(target->weightpos) - 2];
+
+    diff = curr - prev;
+    logabba(L_MIN, "Difference in weight: %0.2f - %0.2f = %0.2f", curr, prev, diff);
+    if ((diff > -1) && (diff < 1)) {
+        // running stable
+        if (target->stable_time == 0) {
+            time(&(target->stable_time));
+            return 0;
+        } else {
+            if ((time(NULL) - target->stable_time) > 15 * 60) { // 15 times 60 seconds
+                logabba(L_MIN, "Running stable now");
+                return 1;
+            }
+            return 0;
+        }
+
+
+    } else {
+        // not running stable
+        target->stable_time = 0;
+        return 0;
+    }
 }
 
 void doload(struct bat3* state, struct action* target) {
 
     int minpos;
+    int stable = 0;
 
     if (state->batRun == ON) {
         // Running on batteries
@@ -179,46 +217,53 @@ void doload(struct bat3* state, struct action* target) {
             time(&(target->alarm));
             target->alarm += 1; // next second we will record again
 
-            logabba(L_MIN, "Filing second %d", target->seccnt);
+            logabba(L_NOTICE, "Filing second %d", target->seccnt);
             target->sec[(target->seccnt)++] = state->bat_u;
 
             if (target->seccnt >= MAXSEC) {
-                logabba(L_MIN, "More than MAXSEC=%d, filling min", MAXSEC);
+                //logabba(L_MIN, "More than MAXSEC=%d, filling min", MAXSEC);
                 // find the new position
                 minpos = target->mincnt;
-                if (minpos < MAXMIN) { 
+                if (minpos < MAXMIN) {
                     target->mincnt++;
                 } else { // oops, the end, shift the values!
                     int i;
-                    
-                    for (i=1; i<MAXMIN; i++) {
-                        target->min[i-1] = target->min[i];
+
+                    for (i = 1; i < MAXMIN; i++) {
+                        target->min[i - 1] = target->min[i];
                     }
-                    minpos-=1;
-                } 
-                logabba(L_MIN, "More than MAXSEC=%d, filling minpos=%d", MAXSEC, minpos);
-                
+                    minpos -= 1;
+                }
+
                 target->min[minpos] =
                         average(target->seccnt, target->sec);
                 target->seccnt = 0;
-                logabba(L_MIN, "More than MAXSEC=%d, filed minpos=%d with avg=%d", MAXSEC, minpos, target->min[minpos]);
+                logabba(L_MIN, "More than MAXSEC=%d, filed minpos=%d with avg=%d",
+                        MAXSEC, minpos, target->min[minpos]);
                 // we need more than 1 value
-                if (minpos>1) process_first_degree(target);
+                if (minpos > 1) {
+                    process_first_degree(target);
+                    stable = check_stable(target);
+                }
             }
 
         }
-        
-        calc_load(state, target);
 
-        if (state->opampEn == OFF) logabba(L_MIN, "I start loading");
-        switch_opamp(state, ON); // should only be done if target!=0
+        if (stable) {
+            switch_opamp(state, OFF);
+        } else {
+            calc_load(state, target);
 
-        state->buckEn = OFF;
-        state->offsetEn = OFF;
-        state->pwm_t = MAX_PWM_T;
+            if (state->opampEn == OFF) logabba(L_MIN, "I start loading");
+            switch_opamp(state, ON); // should only be done if target!=0
 
-    } 
-    
+            state->buckEn = OFF;
+            state->offsetEn = OFF;
+            state->pwm_t = MAX_PWM_T;
+        }
+
+    }
+
 }
 
 void doread(struct bat3* state, int address) {

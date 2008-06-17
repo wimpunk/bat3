@@ -80,9 +80,13 @@ struct action {
 	time_t alarm;	// time when we have to record the current voltage
 	time_t stable_time; // time since when the current has been stable
 	
+	// we need to calculate the average so we get the values.
+	// maybe I could use something like avg += val/cnt ..
 	int seccnt;
 	int sec[MAXSEC];
 	
+	// TODO: basicly we just jeed the previous value
+	// weight is used to keep the statistics
 	int mincnt;
 	int min[MAXMIN];
 
