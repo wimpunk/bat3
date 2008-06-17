@@ -38,13 +38,17 @@
 #define DEFAULT_PORT     1302
 #define MAX_RETRIES 5
 
-int current  = DEFAULT_CURRENT;
+
+
+
 
 typedef enum {
 	E_OKAY,
 	E_DEVICE,
 	E_SAMPLE
 } errors;
+
+struct action	params;	
 
 char *print_onoff(onoff_t onoff) {
 	if (onoff == ON) {
@@ -55,31 +59,33 @@ char *print_onoff(onoff_t onoff) {
 	return NULL;
 }
 
-int doRound(int fd, struct bat3 *sample, int current, FILE *logfile);
+int doRound(int fd, struct bat3 *sample, struct action *params);
 
 int setCurrent(int i) {
 	
-	if ((i<0) || (i>2000)) current = DEFAULT_CURRENT;
-	else current = i;
+	if ((i<0) || (i>2000)) params.current = DEFAULT_CURRENT;
+	else params.current = i;
 	
-	return current;
+	return params.current;
 	
 }
 
 int getCurrent() {
 	
-	return current;
+	return params.current;
 	
 }
 
 int setLoglevel(int i) {
+	
 	setloglevel(i, "bat3");
+	params.loglevel=getloglevel();
 	
 	return i;
 	
 }
 
-int getLoglevel() {
+int getLoglevel(struct action *params) {
 	
 	return getloglevel();
 	
@@ -157,6 +163,9 @@ static void initParams(struct action *params) {
 	params->loglevel = DEFAULT_LOGLEVEL;
 	params->samples  = DEFAULT_SAMPLES;
 	params->portno	= DEFAULT_PORT;
+	
+// 	params->weightcnt = 0;
+	params->weightpos = 0;
 }
 
 static int processArguments(int argc, char **argv, struct action *params) {
@@ -241,12 +250,13 @@ int runArgument(struct action *params) {
 		return E_SAMPLE;
 	}
 	
-	
+	// TODO: dont think we need this
 	// ignoring broken pipes
 	signal(SIGPIPE, SIG_IGN);
 	
 	
-	while (((cntsamples<params->samples) || (params->samples == -1)) && (sw_continue))	{
+	while (((cntsamples<params->samples) || (params->samples == -1)) 
+			&& (sw_continue))	{
 		
 		FD_ZERO( &rfds );
 		FD_SET( fd, &rfds );
@@ -263,6 +273,9 @@ int runArgument(struct action *params) {
 		
 		if (FD_ISSET(fd, &rfds)) {
 			
+			int oldpos;
+			int newpos;
+			
 			if (params->read) doread(&state, params->address);
 			if (params->write) dowrite(&state, params->address, params->value);
 			
@@ -270,10 +283,11 @@ int runArgument(struct action *params) {
 			
 			// TODO: we should verify the value of doRound.  When it returns
 			// -1 it can't communicate with the TS-BAT3
-			doRound(fd, &state, current, params->logfile);
+			doRound(fd, &state, params);
 			if (!((params->samples == -1) && (cntsamples>10000))) cntsamples++;
 			
 			
+
 			if (params->read && cntsamples==3) {
 				logabba(L_MIN, "Reading from address %i: %04X=%04X",
 						params->address, state.ee_addr, state.ee_data);
@@ -324,7 +338,7 @@ int runArgument(struct action *params) {
  * and writes the result to the TS-BAT3 which should return a new sample.
  * TODO: it should also contain the reading and writing to eeprom.
  */
-int doRound(int fd, struct bat3 *sample, int current, FILE *logfile) {
+int doRound(int fd, struct bat3 *sample, struct action *params) {
 	
 	struct bat3 state = *sample;
 	int cnt;
@@ -337,12 +351,12 @@ int doRound(int fd, struct bat3 *sample, int current, FILE *logfile) {
 	// some info to the battery within 2 minutes and wait for reaction.
 	if (state.batRun == ON) {
 		state.led = OFF;
-		doload(&state, current);
+		doload(&state, params);
 	} else {
 		changeled(&state);
 		// TODO: we should pass more info about the current loading state
 		// to the battery
-		doload(&state, current);
+		doload(&state, params);
 		logabba(L_NOTICE, "Switching led to %s", print_onoff(state.led));
 	}
 	
@@ -355,7 +369,7 @@ int doRound(int fd, struct bat3 *sample, int current, FILE *logfile) {
 	
 	cnt=0;
 	
-	while (!getsample(fd, &state, logfile) && cnt<MAX_RETRIES) {
+	while (!getsample(fd, &state, params->logfile) && cnt<MAX_RETRIES) {
 		cnt++;
 	}
 	
@@ -374,7 +388,7 @@ int doRound(int fd, struct bat3 *sample, int current, FILE *logfile) {
 
 int main(int argc, char *argv[]) {
 	
-	struct action	params;	
+	
 	
 	initMySocket();
 	initParams(&params);
@@ -385,9 +399,13 @@ int main(int argc, char *argv[]) {
 	
 	setloglevel(params.loglevel, "bat3");
 	
+	#ifndef REV
 	logabba(L_MIN, "%s (Ver %s) started, loglevel %i, getting %d samples, using %imA to load, listening to port %d",
 			argv[0], VERSION, params.loglevel, params.samples, params.current, params.portno);
-	
+	#else
+	logabba(L_MIN, "%s (Rev %s) started, loglevel %i, getting %d samples, using %imA to load, listening to port %d",
+			argv[0], REV, params.loglevel, params.samples, params.current, params.portno);
+	#endif
 	runArgument(&params);
 	
 	
