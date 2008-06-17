@@ -18,10 +18,10 @@ CXX=g++
 FC=
 
 # Include project Makefile
-include bat3-Makefile.mk
+include bat3-Makefile1.mk
 
 # Object Directory
-OBJECTDIR=build/Default/GNU-Linux-x86
+OBJECTDIR=build/Default/GNU-Generic
 
 # Object Files
 OBJECTFILES=
@@ -41,14 +41,14 @@ LDLIBSOPTIONS=
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS} 
-	cd . && ${MAKE} -f Makefile CFLAGS=-Wall CC=/opt/crosstool/gcc-4.0.1-glibc-2.3.5/arm-unknown-linux-gnu/bin/arm-unknown-linux-gnu-gcc
+	cd . && make -f Makefile
 
 # Subprojects
 .build-subprojects:
 
 # Clean Targets
 .clean-conf:
-	cd . && ${MAKE} -f Makefile clean
+	cd . && make -f Makefile clean
 
 # Subprojects
 .clean-subprojects:
