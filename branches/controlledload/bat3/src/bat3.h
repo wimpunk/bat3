@@ -9,6 +9,12 @@
 #ifndef BAT3_H_INCLUDED
 #define BAT3_H_INCLUDED
 
+
+// loading parameters
+#define MAXSEC 60 // we take the average every 60 seconds
+#define MAXMIN 30 // we compare the changes during 30 minutes
+#define FILTER 0.97
+
 #include <stdio.h>
 #include "log.h"
 #include <time.h>
@@ -49,11 +55,44 @@ struct bat3 {
 
 };
 
+struct action {
+	
+	char device[50];
+	
+	int current;		// ordered current
+	int read;
+	int write;
+	int address;
+	
+	FILE *logfile;
+	int loglevel;
+	int portno;
+	
+	int value;
+	
+	int samples;
+	int socketfd;
+	
+	float weight[MAXMIN];	// weighted mean
+	// int   weightcnt;	// numbers of elements
+	int   weightpos;	// position
+	
+	time_t alarm;	// time when we have to record the current voltage
+	time_t stable_time; // time since when the current has been stable
+	
+	int seccnt;
+	int sec[MAXSEC];
+	
+	int mincnt;
+	int min[MAXMIN];
+
+};
+
 int getAddress();
 int getCurrent();
 int setCurrent(int i);
 int getLoglevel();
-int setLoglevel();
+int setLoglevel(int i);
 
 #endif
 
