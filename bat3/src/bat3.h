@@ -13,7 +13,7 @@
 // loading parameters
 #define MAXSEC 60 // we take the average every 60 seconds
 #define MAXMIN 30 // we compare the changes during 30 minutes
-#define FILTER 0.97
+#define FILTER 0.99 // 0.97 wasn good enough
 
 #include <stdio.h>
 #include "log.h"
@@ -79,16 +79,6 @@ struct action {
 	
 	time_t alarm;	// time when we have to record the current voltage
 	time_t stable_time; // time since when the current has been stable
-	
-	// we need to calculate the average so we get the values.
-	// maybe I could use something like avg += val/cnt ..
-	int seccnt;
-	int sec[MAXSEC];
-	
-	// TODO: basicly we just jeed the previous value
-	// weight is used to keep the statistics
-	int mincnt;
-	int min[MAXMIN];
 
 };
 
