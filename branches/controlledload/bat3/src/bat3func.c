@@ -50,8 +50,6 @@ static void reset_history(struct action* target) {
     // reset history timers
     target->alarm = 0;
     target->stable_time = 0;
-    target->seccnt = 0;
-    target->mincnt = 0;
     target->weightpos = 0;
 }
 
@@ -103,6 +101,7 @@ static int calc_load(struct bat3* state, struct action* target) {
 
 }
 
+/* don't use average, just calculate the weight
 static float average(int cnt, int *a) {
     int i;
     int total = 0;
@@ -111,27 +110,29 @@ static float average(int cnt, int *a) {
 
     return (1.0)*total / cnt;
 }
+ */
 
-static void process_first_degree(struct action* target) {
+static void process_first_degree(struct action* target, int newval) {
 
     int pos;
     float newweight;
-    
+
 
     // calculate the new weight
-    logabba(L_MIN, "process will add avg=%d", target->min[(target->mincnt) - 1]);
-    
+    logabba(L_INFO, "process will add avg=%d", newval);
+
     if (!(target->weightpos)) {
-        newweight = target->min[(target->mincnt) - 1];
+        newweight = newval;
     } else {
         newweight =
-                (target->min[(target->mincnt) - 1])*(FILTER) +
-                (target->weight[(target->weightpos) - 1])*(1-FILTER);
-        logabba(L_MIN, "New weight: %d*(FILTER)+(%0.2f*(1-FILTER))=%0.2f", 
-                target->min[(target->mincnt) - 1],
+                newval * (1 - FILTER) +
+                (target->weight[(target->weightpos) - 1])*(FILTER);
+        logabba(L_MIN, "New weight (pos=%d): %d*(1-FILTER)+(%0.2f*(FILTER))=%0.2f",
+                (target->weightpos) - 1,
+                newval,
                 target->weight[(target->weightpos) - 1],
-            newweight);
-    
+                newweight);
+
     }
 
     // this should be the new position
@@ -144,8 +145,8 @@ static void process_first_degree(struct action* target) {
     }
 
     // bring them together: new value on the correct place
-    logabba(L_MIN, "New weight: %0.2f", newweight);
-    target->weight[target->weightpos-1] = newweight;
+    logabba(L_INFO, "New weight: %0.2f", newweight);
+    target->weight[target->weightpos - 1] = newweight;
 
 }
 
@@ -212,44 +213,16 @@ void doload(struct bat3* state, struct action* target) {
         }
 
         if (target->alarm <= time(NULL)) { // time to record the setting
-            // logabba(L_MIN, "Alarm has expired");
             // reset the alarm;
             time(&(target->alarm));
             target->alarm += 1; // next second we will record again
+            process_first_degree(target, state->bat_u);
+            // stable = check_stable(target);
 
-            logabba(L_NOTICE, "Filing second %d", target->seccnt);
-            target->sec[(target->seccnt)++] = state->bat_u;
-
-            if (target->seccnt >= MAXSEC) {
-                //logabba(L_MIN, "More than MAXSEC=%d, filling min", MAXSEC);
-                // find the new position
-                minpos = target->mincnt;
-                if (minpos < MAXMIN) {
-                    target->mincnt++;
-                } else { // oops, the end, shift the values!
-                    int i;
-
-                    for (i = 1; i < MAXMIN; i++) {
-                        target->min[i - 1] = target->min[i];
-                    }
-                    minpos -= 1;
-                }
-
-                target->min[minpos] =
-                        average(target->seccnt, target->sec);
-                target->seccnt = 0;
-                logabba(L_MIN, "More than MAXSEC=%d, filed minpos=%d with avg=%d",
-                        MAXSEC, minpos, target->min[minpos]);
-                // we need more than 1 value
-                if (minpos > 1) {
-                    process_first_degree(target);
-                    stable = check_stable(target);
-                }
-            }
-
-        }
-
-        if (stable) {
+        } 
+        
+        if (check_stable(target)) {
+            logabba(L_MIN, "Seem to be stable, switching off");
             switch_opamp(state, OFF);
         } else {
             calc_load(state, target);
