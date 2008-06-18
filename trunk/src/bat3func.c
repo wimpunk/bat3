@@ -216,18 +216,27 @@ void doload(struct bat3* state, struct action* target) {
             }
         }
 
-        if (check_stable(target)) {
-            logabba(L_MIN, "Seem to be stable, switching off");
-            switch_opamp(state, OFF);
+        if (check_stable(target) &&
+                ((time(NULL) - target->stable_time) < 24 * 60 * 60)) {
+
+            // switchin opamp off
+            if (state->opampEn == ON) {
+                logabba(L_INFO, "Seem to be stable, switching off");
+                switch_opamp(state, OFF);
+            }
         } else {
             calc_load(state, target);
 
-            if (state->opampEn == OFF) logabba(L_MIN, "I start loading");
-            switch_opamp(state, ON); // should only be done if target!=0
+            // switchin opamp on
+            if (state->opampEn == OFF) {
+                logabba(L_MIN, "I start loading");
+                switch_opamp(state, ON);
+            }
 
             state->buckEn = OFF;
             state->offsetEn = OFF;
             state->pwm_t = MAX_PWM_T;
+
         }
 
     }
