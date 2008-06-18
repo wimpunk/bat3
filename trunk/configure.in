@@ -9,12 +9,12 @@ AM_CONFIG_HEADER(config.h)
 
 AC_SUBST(VERSION)
 
-#REV werd MYREV maar geen idee hoe het verderr moest
-#MYREV=`svn info . | grep 'Revision: '| awk '{print $2}'`
-AC_DEFINE(REV,"113","Current revision")
-# REV=71
-# AM_INIT_AUTOMAKE(REV)
-AC_SUBST(REV)
+AC_MSG_CHECKING([for current revision number]) # M4 function call
+answer=$(svn info . | grep 'Revision: '| awk '{print $2}') # sh variable assignment
+AC_MSG_RESULT($answer) # M4 function call
+AC_SUBST(REV,$answer)
+
+AC_DEFINE_UNQUOTED(REV,"$REV",Current version)
 
 ISODATE=`date +%Y-%m-%d`
 AC_SUBST(ISODATE)

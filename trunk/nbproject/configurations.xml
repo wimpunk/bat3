@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configurationDescriptor version="39">
+<configurationDescriptor version="45">
   <logicalFolder name="root" displayName="root" projectFiles="true">
     <logicalFolder name="bat3" displayName="bat3" projectFiles="true">
       <logicalFolder name="avr" displayName="avr" projectFiles="true">
@@ -46,54 +46,30 @@
         <itemPath>src/term.h</itemPath>
         <itemPath>src/tsbat3.h</itemPath>
       </logicalFolder>
-      <logicalFolder name="src.old" displayName="src.old" projectFiles="true">
-        <itemPath>src.old/avr.c</itemPath>
-        <itemPath>src.old/avr.h</itemPath>
-        <itemPath>src.old/base.h</itemPath>
-        <itemPath>src.old/bat3.c</itemPath>
-        <itemPath>src.old/bat3.h</itemPath>
-        <itemPath>src.old/ByteArray.c</itemPath>
-        <itemPath>src.old/ByteArray.h</itemPath>
-        <itemPath>src.old/file.c</itemPath>
-        <itemPath>src.old/file.h</itemPath>
-        <itemPath>src.old/log.c</itemPath>
-        <itemPath>src.old/log.h</itemPath>
-        <itemPath>src.old/net.c</itemPath>
-        <itemPath>src.old/net.h</itemPath>
-        <itemPath>src.old/Process.c</itemPath>
-        <itemPath>src.old/Process.h</itemPath>
-        <itemPath>src.old/serial.c</itemPath>
-        <itemPath>src.old/serial.h</itemPath>
-        <itemPath>src.old/term.c</itemPath>
-        <itemPath>src.old/term.h</itemPath>
-      </logicalFolder>
       <itemPath>config.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
                    projectFiles="false">
-      <itemPath>configure.in</itemPath>
+      <itemPath>bat3-Makefile1.mk</itemPath>
+      <itemPath>configure</itemPath>
       <itemPath>Makefile</itemPath>
-      <itemPath>src/Makefile.am</itemPath>
-      <itemPath>Makefile.am</itemPath>
     </logicalFolder>
   </logicalFolder>
-  <projectmakefile>bat3-Makefile.mk</projectmakefile>
+  <sourceEncoding>UTF-8</sourceEncoding>
+  <projectmakefile>bat3-Makefile1.mk</projectmakefile>
   <confs>
     <conf name="Default" type="0">
       <toolsSet>
-        <compilerSet>GNU</compilerSet>
-        <cRequired>true</cRequired>
-        <cppRequired>true</cppRequired>
-        <fortranRequired>false</fortranRequired>
-        <platform>2</platform>
+        <compilerSet>GNU|GNU</compilerSet>
+        <platform>5</platform>
       </toolsSet>
       <makefileType>
         <makeTool>
           <buildCommandWorkingDir>.</buildCommandWorkingDir>
-          <buildCommand>${MAKE} -f Makefile CFLAGS=-Wall CC=/opt/crosstool/gcc-4.0.1-glibc-2.3.5/arm-unknown-linux-gnu/bin/arm-unknown-linux-gnu-gcc</buildCommand>
-          <cleanCommand>${MAKE} -f Makefile clean</cleanCommand>
-          <executablePath>src/bat3</executablePath>
+          <buildCommand>make -f Makefile</buildCommand>
+          <cleanCommand>make -f Makefile clean</cleanCommand>
+          <executablePath>bat3</executablePath>
         </makeTool>
         <requiredProjects>
         </requiredProjects>
@@ -168,63 +144,6 @@
         <itemTool>0</itemTool>
       </item>
       <item path="lib/term.h">
-        <itemTool>3</itemTool>
-      </item>
-      <item path="src.old/ByteArray.c">
-        <itemTool>0</itemTool>
-      </item>
-      <item path="src.old/ByteArray.h">
-        <itemTool>3</itemTool>
-      </item>
-      <item path="src.old/Process.c">
-        <itemTool>0</itemTool>
-      </item>
-      <item path="src.old/Process.h">
-        <itemTool>3</itemTool>
-      </item>
-      <item path="src.old/avr.c">
-        <itemTool>0</itemTool>
-      </item>
-      <item path="src.old/avr.h">
-        <itemTool>3</itemTool>
-      </item>
-      <item path="src.old/base.h">
-        <itemTool>3</itemTool>
-      </item>
-      <item path="src.old/bat3.c">
-        <itemTool>0</itemTool>
-      </item>
-      <item path="src.old/bat3.h">
-        <itemTool>3</itemTool>
-      </item>
-      <item path="src.old/file.c">
-        <itemTool>0</itemTool>
-      </item>
-      <item path="src.old/file.h">
-        <itemTool>3</itemTool>
-      </item>
-      <item path="src.old/log.c">
-        <itemTool>0</itemTool>
-      </item>
-      <item path="src.old/log.h">
-        <itemTool>3</itemTool>
-      </item>
-      <item path="src.old/net.c">
-        <itemTool>0</itemTool>
-      </item>
-      <item path="src.old/net.h">
-        <itemTool>3</itemTool>
-      </item>
-      <item path="src.old/serial.c">
-        <itemTool>0</itemTool>
-      </item>
-      <item path="src.old/serial.h">
-        <itemTool>3</itemTool>
-      </item>
-      <item path="src.old/term.c">
-        <itemTool>0</itemTool>
-      </item>
-      <item path="src.old/term.h">
         <itemTool>3</itemTool>
       </item>
       <item path="src/bat3.c">
