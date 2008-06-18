@@ -101,22 +101,10 @@ static int calc_load(struct bat3* state, struct action* target) {
 
 }
 
-/* don't use average, just calculate the weight
-static float average(int cnt, int *a) {
-    int i;
-    int total = 0;
-
-    for (i = 0; i < cnt; i++, a++) total += *a;
-
-    return (1.0)*total / cnt;
-}
- */
-
 static void process_first_degree(struct action* target, int newval) {
 
     int pos;
     float newweight;
-
 
     // calculate the new weight
     logabba(L_INFO, "process will add avg=%d", newval);
@@ -125,9 +113,9 @@ static void process_first_degree(struct action* target, int newval) {
         newweight = newval;
     } else {
         newweight =
-                newval * (1 - FILTER) +
-                (target->weight[(target->weightpos) - 1])*(FILTER);
-        logabba(L_MIN, "New weight (pos=%d): %d*(1-FILTER)+(%0.2f*(FILTER))=%0.2f",
+                1.00 * newval * (1 - FILTER) +
+                (target->weight[(target->weightpos) - 1]) * (FILTER);
+        logabba(L_NOTICE, "New weight (pos=%d): %d*(1-FILTER)+(%0.2f*(FILTER))=%0.2f",
                 (target->weightpos) - 1,
                 newval,
                 target->weight[(target->weightpos) - 1],
@@ -154,24 +142,29 @@ int check_stable(struct action *target) {
     // checks if we're loading stable
     float curr, prev, diff;
 
+    // preventing buffer overflow
+    if (target->weightpos < 2) return 0;
+
     curr = target->weight[(target->weightpos) - 1];
     prev = target->weight[(target->weightpos) - 2];
 
     diff = curr - prev;
-    logabba(L_MIN, "Difference in weight: %0.2f - %0.2f = %0.2f", curr, prev, diff);
+    logabba(L_NOTICE, "Difference in weight (weightpos=%d): %0.2f - %0.2f = %0.2f",
+            target->weightpos, curr, prev, diff);
     if ((diff > -1) && (diff < 1)) {
         // running stable
         if (target->stable_time == 0) {
+            logabba(L_MIN, "Starting to run almost stable now, waiting 15min");
             time(&(target->stable_time));
             return 0;
         } else {
-            if ((time(NULL) - target->stable_time) > 15 * 60) { // 15 times 60 seconds
-                logabba(L_MIN, "Running stable now");
+            if ((diff = time(NULL) - target->stable_time) > 15 * 60) { // 15 times 60 seconds
+                if ((diff < 15 * 60 + 2))
+                    logabba(L_MIN, "Running stable now for at least 15 min");
                 return 1;
             }
             return 0;
         }
-
 
     } else {
         // not running stable
@@ -216,11 +209,13 @@ void doload(struct bat3* state, struct action* target) {
             // reset the alarm;
             time(&(target->alarm));
             target->alarm += 1; // next second we will record again
-            process_first_degree(target, state->bat_u);
-            // stable = check_stable(target);
+            if (!check_stable(target)) {
+                // If previous round didn't give us a stable result we try again
+                // otherwise we should wait until time has passed
+                process_first_degree(target, state->bat_u);
+            }
+        }
 
-        } 
-        
         if (check_stable(target)) {
             logabba(L_MIN, "Seem to be stable, switching off");
             switch_opamp(state, OFF);
