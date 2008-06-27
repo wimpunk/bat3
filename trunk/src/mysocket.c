@@ -80,7 +80,6 @@ static int openMySocket(int portno) {
 		return -1;
 	}
 	
-	
 	return (sockfd);
 	
 }

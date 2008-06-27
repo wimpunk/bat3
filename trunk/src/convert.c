@@ -49,9 +49,6 @@ int battI(unsigned short ticks) // return uA
 	
 }
 
-unsigned short Ibatt(int current) {
-	return (current/60)+29000;
-}
 
 // Converts TEMP124 signal to Celsius
 float tempC(short int tmp) {
