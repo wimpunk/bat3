@@ -8,6 +8,8 @@
  * This file is intended to contain all the possible functions of the bat3
  * */
 
+#include <stdlib.h>
+
 #include "bat3.h"
 #include "bat3func.h"
 
@@ -138,7 +140,7 @@ static void process_first_degree(struct action* target, int newval) {
 
 }
 
-int check_stable(struct action *target) {
+static int check_stable(struct action *target) {
     // checks if we're loading stable
     float curr, prev, diff;
 
@@ -154,13 +156,14 @@ int check_stable(struct action *target) {
     if ((diff > -1) && (diff < 1)) {
         // running stable
         if (target->stable_time == 0) {
-            logabba(L_MIN, "Starting to run almost stable now, waiting 15min");
+            logabba(L_NOTICE, "Starting to run almost stable now, waiting 15min");
+
             time(&(target->stable_time));
             return 0;
         } else {
             if ((diff = time(NULL) - target->stable_time) > 15 * 60) { // 15 times 60 seconds
                 if ((diff < 15 * 60 + 2))
-                    logabba(L_MIN, "Running stable now for at least 15 min");
+                    logabba(L_MIN, "Running stable now for at least 15 min on %f", curr);
                 return 1;
             }
             return 0;
