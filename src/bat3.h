@@ -74,7 +74,6 @@ struct action {
 	int socketfd;
 	
 	float weight[MAXMIN];	// weighted mean
-	// int   weightcnt;	// numbers of elements
 	int   weightpos;	// position
 	
 	time_t alarm;	// time when we have to record the current voltage
