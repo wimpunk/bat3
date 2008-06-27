@@ -20,6 +20,9 @@
 #define MIN_PWM_T 0x0100   // min pwm_min with default current
 #define DEFTARGET    400   // default target current
 
+#define STABLE_TIME   15   // number of minutes to be considered stable
+
+
 struct bat3 curState;
 
 typedef enum {
@@ -161,9 +164,11 @@ static int check_stable(struct action *target) {
             time(&(target->stable_time));
             return 0;
         } else {
-            if ((diff = time(NULL) - target->stable_time) > 15 * 60) { // 15 times 60 seconds
-                if ((diff < 15 * 60 + 2))
-                    logabba(L_MIN, "Running stable now for at least 15 min on %f", curr);
+            if ((diff = time(NULL) - target->stable_time) > STABLE_TIME * 60) { // STABLE_TIME times 60 seconds
+                if ((diff < STABLE_TIME * 60 + 1))
+                    logabba(L_MIN, 
+                            "Running stable now for at least %i min on %f", 
+                            STABLE_TIME, curr);
                 return 1;
             }
             return 0;
