@@ -205,6 +205,20 @@ mysock_t cmdCurrent(int fd, char *rest) {
 
 }
 
+mysock_t cmdHours(int fd, char*rest) {
+
+    time_t myHour =  getHours();
+    
+    if (myHour==0) {
+        writeFd(fd, "Hours not set");
+    } else {
+        writeFd(fd, "Hours set to %s", ctime(&myHour));
+    }
+        
+    return MYSOCK_OKAY;
+
+}
+
 mysock_t cmdLoglevel(int fd, char*rest) {
 
     int newloglevel;
@@ -270,6 +284,8 @@ mysock_t readSocket(int fd) {
         ret = cmdState(fd, buffer);
     } else if (cmd[0] == 'c') {
         ret = cmdCurrent(fd, buffer);
+    } else if (cmd[0] == 'h') { // hours - time we will work
+        ret = cmdHours(fd, buffer);
     } else if (cmd[0] == 'l') {
         ret = cmdLoglevel(fd, buffer);
     } else {

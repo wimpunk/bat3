@@ -74,6 +74,14 @@ int getCurrent() {
 
 }
 
+time_t getHours() {
+    return params.hours;
+}
+
+int getOpamp() {
+
+}
+
 int setLoglevel(int i) {
 
     setloglevel(i, "bat3");
@@ -90,17 +98,17 @@ int getLoglevel(struct action *params) {
 }
 
 int setHours(int i) {
-    
-    if (i<0) {
+
+    if (i < 0) {
         params.hours = 0;
         return params.hours;
     }
-    if (i>48) i=48;
-    
-    params.hours = time(NULL) + i*3600;
-    
+    if (i > 48) i = 48;
+
+    params.hours = time(NULL) + i * 3600;
+
     return params.hours;
-    
+
 }
 
 static int getsample(int fd, struct bat3 *sample, FILE *logfile) {
