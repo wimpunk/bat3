@@ -222,6 +222,25 @@ void doload(struct bat3* state, struct action* target) {
             state->softJP3 = OFF;
         }
 
+
+        // no fancy stuff if we use hour based loading
+        if (target->hours != 0) {
+            // time based loading
+            if (target->hours < time(NULL)) {
+                logabba(L_INFO, "Time reached, switching opamp off");
+                switch_opamp(state, OFF);
+            } else {
+                calc_load(state, target);
+                switch_opamp(state, ON);
+                state->buckEn = OFF;
+                state->offsetEn = OFF;
+                state->pwm_t = MAX_PWM_T;
+            }
+
+            return;
+        }
+
+
         if (target->alarm <= time(NULL)) { // time to record the setting
             // reset the alarm;
             time(&(target->alarm));
@@ -233,19 +252,7 @@ void doload(struct bat3* state, struct action* target) {
             }
         }
 
-        if (target->hours != 0) {
-            // time based loading
-            if (target->hours < time(NULL)) {
-                logabba(L_INFO, "Time reached, switching opamp off");
-                switch_opamp(state, OFF);
-            } else {
-                calc_load(state, target);
-                state->buckEn = OFF;
-                state->offsetEn = OFF;
-                state->pwm_t = MAX_PWM_T;
-            }
-        } else
-            if (check_stable(target) &&
+        if (check_stable(target) &&
                 ((time(NULL) - target->stable_time) < 24 * 60 * 60)) {
 
             // switchin opamp off
@@ -335,7 +342,7 @@ void dowrite(struct bat3* state, int address, int value) {
 
 }
 
-void setBatState(struct bat3* newState) {
+void setBatState(struct bat3 * newState) {
     curState = *newState;
 }
 
@@ -352,6 +359,6 @@ int getAddress() {
     return -1;
 }
 
-struct bat3* getState() {
+struct bat3 * getState() {
     return &curState;
 }
