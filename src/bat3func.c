@@ -22,6 +22,15 @@
 
 #define STABLE_TIME   15   // number of minutes to be considered stable
 
+/*
+ * BIG and SMALL STEP are used by the loading function:
+ * if BIG < diff : add 10
+ * if SMALL < diff < BIG : add 1
+ * if diff < SMALL : stable
+ */
+#define BIG_STEP 100       
+#define SMALL_STEP 10      
+
 
 struct bat3 curState;
 
@@ -68,17 +77,17 @@ static int calc_load(struct bat3* state, struct action* target) {
     // based on the current version
     newpwm = state->pwm_lo;
 
-    if (diff > 100) {
+    if (diff > BIG_STEP) {
         // newpwm -= pwmdiff);
         newpwm -= 10;
-        logabba(L_NOTICE, "Doload: diff>100, newpwm = %04X", newpwm);
-    } else if (diff<-100) {
+        logabba(L_NOTICE, "Doload: diff>%i, newpwm = %04X", BIG_STEP, newpwm);
+    } else if (diff<-BIG_STEP) {
         // newpwm += pwmdiff;
         newpwm += 10;
-        logabba(L_NOTICE, "Doload: diff<-100, newpwm = %04X", newpwm);
-    } else if (diff > 50) {
+        logabba(L_NOTICE, "Doload: diff<-%i, newpwm = %04X", BIG_STEP, newpwm);
+    } else if (diff > SMALL_STEP) {
         newpwm -= 1;
-    } else if (diff<-50) {
+    } else if (diff< -SMALL_STEP) {
         newpwm += 1;
     }
 
