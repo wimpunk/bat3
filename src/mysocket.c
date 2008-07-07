@@ -125,6 +125,7 @@ void cmdHelp(int fd) {
     writeFd(fd, " bat: get battery state");
     writeFd(fd, " state: get current state (complete array)");
     writeFd(fd, " current i: set new target current to i");
+    writeFd(fd, " hours: get current halt-time");
     writeFd(fd, " loglevel i: set loglevel to i");
     writeFd(fd, " quit: close this connection");
     writeFd(fd, " exit: end the bat3 program");
