@@ -72,6 +72,7 @@ struct action {
 	
 	int samples;
 	int socketfd;
+	time_t hours;
 	
 	float weight[MAXMIN];	// weighted mean
 	int   weightpos;	// position

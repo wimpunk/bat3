@@ -166,9 +166,9 @@ static int check_stable(struct action *target) {
         } else {
             if ((diff = time(NULL) - target->stable_time) > STABLE_TIME * 60) { // STABLE_TIME times 60 seconds
                 if ((diff < STABLE_TIME * 60 + 1))
-                    logabba(L_MIN, 
-                            "Running stable now for at least %i min on %f", 
-                            STABLE_TIME, curr);
+                    logabba(L_MIN,
+                        "Running stable now for at least %i min on %f",
+                        STABLE_TIME, curr);
                 return 1;
             }
             return 0;
@@ -224,7 +224,19 @@ void doload(struct bat3* state, struct action* target) {
             }
         }
 
-        if (check_stable(target) &&
+        if (target->hours != 0) {
+            // time based loading
+            if (target->hours < time(NULL)) {
+                logabba(L_INFO, "Time reached, switching opamp off");
+                switch_opamp(state, OFF);
+            } else {
+                calc_load(state, target);
+                state->buckEn = OFF;
+                state->offsetEn = OFF;
+                state->pwm_t = MAX_PWM_T;
+            }
+        } else
+            if (check_stable(target) &&
                 ((time(NULL) - target->stable_time) < 24 * 60 * 60)) {
 
             // switchin opamp off
