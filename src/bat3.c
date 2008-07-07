@@ -89,6 +89,20 @@ int getLoglevel(struct action *params) {
 
 }
 
+int setHours(int i) {
+    
+    if (i<0) {
+        params.hours = 0;
+        return params.hours;
+    }
+    if (i>48) i=48;
+    
+    params.hours = time(NULL) + i*3600;
+    
+    return params.hours;
+    
+}
+
 static int getsample(int fd, struct bat3 *sample, FILE *logfile) {
 
     struct bat3 temp;
@@ -138,6 +152,7 @@ static void usage(char *progname) {
     printf("      -a address: address to use while reading/writing, default %i\n", DEFAULT_ADDRESS);
     printf("      -c current: current to load (mA), default %i\n", DEFAULT_CURRENT);
     printf("      -d device: device to use, default %s\n", BAT3DEV);
+    printf("      -e hours: end loading after hours\n");
     printf("      -f logfile: file to dump arrays to, default /dev/null\n");
     printf("      -l loglevel: loglevel to use, default %i\n", DEFAULT_LOGLEVEL);
     printf("      -p portnr: portnumber to listen to, default %i\n", DEFAULT_PORT);
@@ -162,6 +177,7 @@ static void initParams(struct action *params) {
     params->loglevel = DEFAULT_LOGLEVEL;
     params->samples = DEFAULT_SAMPLES;
     params->portno = DEFAULT_PORT;
+    params->hours = -1;
 
     // 	params->weightcnt = 0;
     params->weightpos = 0;
@@ -172,7 +188,7 @@ static int processArguments(int argc, char **argv, struct action *params) {
     int c;
     int errcnt = 0;
 
-    while ((c = getopt(argc, argv, "a:c:d:f:h?l:p:rs:w:")) != EOF) {
+    while ((c = getopt(argc, argv, "a:c:d:e:f:h?l:p:rs:w:")) != EOF) {
         switch (c) {
             case 'a': // address
                 params->address = atoi(optarg);
@@ -183,6 +199,9 @@ static int processArguments(int argc, char **argv, struct action *params) {
             case 'd': // device
                 strncpy(params->device, optarg, sizeof (params->device) - 1);
                 printf("I'll read device %s\n", params->device);
+                break;
+            case 'e':
+                setHours(atoi(optarg));
                 break;
             case 'f': // logfile
                 params->logfile = fopen(optarg, "w");
