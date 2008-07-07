@@ -84,6 +84,7 @@ struct action {
 
 int getAddress();
 int getCurrent();
+time_t getHours();
 int setCurrent(int i);
 int getLoglevel();
 int setLoglevel(int i);
