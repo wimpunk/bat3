@@ -232,7 +232,7 @@ mysock_t cmdLoglevel(int fd, char*rest) {
     logabba(L_INFO, "Changing loglevel from %i to %i", getLoglevel(), newloglevel);
 
     writeFd(fd, "Changing loglevel from %i to %i", getLoglevel(), newloglevel);
-    setCurrent(newloglevel);
+    setLoglevel(newloglevel);
     writeFd(fd, "New loglevel set to %i", getLoglevel());
 
     return MYSOCK_OKAY;
