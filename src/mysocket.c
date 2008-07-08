@@ -208,14 +208,25 @@ mysock_t cmdCurrent(int fd, char *rest) {
 
 mysock_t cmdHours(int fd, char*rest) {
 
-    time_t myHour =  getHours();
-    
-    if (myHour==0) {
-        writeFd(fd, "Hours not set");
-    } else {
-        writeFd(fd, "Hours set to %s", ctime(&myHour));
+    time_t myHour = getHours();
+    int newhour;
+
+    if (1 != sscanf(rest, "%i", &newhour)) {
+
+        if (myHour == 0) {
+            writeFd(fd, "Hours not set");
+        } else {
+            writeFd(fd, "Hours set to %s", ctime(&myHour));
+        }
+
+        return MYSOCK_OKAY;
+
     }
-        
+
+    setHours(newhour);
+    myHour = getHours();
+    writeFd(fd, "Changing stoptime to %s", ctime(&myHour));
+
     return MYSOCK_OKAY;
 
 }
