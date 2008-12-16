@@ -44,7 +44,7 @@ typedef enum {
     E_SAMPLE
 } errors;
 
-struct action params;
+static struct action params;
 
 char *print_onoff(onoff_t onoff) {
     if (onoff == ON) {
@@ -434,6 +434,7 @@ int main(int argc, char *argv[]) {
 #endif
     runArgument(&params);
 
+    logabba(L_MIN, "Ending %s", argv[0]);
 
 
     return 0;
