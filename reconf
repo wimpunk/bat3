@@ -1,3 +1,5 @@
+#  PATH=$PATH:/opt/crosstool/gcc-4.0.1-glibc-2.3.5/arm-unknown-linux-gnu/bin ./configure --host=arm-unknown-linux-gnu
+#
 rm -f config.cache && \
 rm -f acconfig.h && \
 aclocal -I m4 && \
